@@ -248,14 +248,14 @@ body{
 
 .compare-row{
   display:grid;
-  grid-template-columns:120px 1fr 1fr 36px;
+  grid-template-columns:140px 1fr 1fr 36px;
   border-bottom:1px solid var(--navy-800);
 }
 
 .compare-row:last-child{ border-bottom:none; }
 
 .compare-row.head{
-  background:var(--accent-dim);
+  background:linear-gradient(120deg, var(--accent-deep), var(--accent));
 }
 
 .compare-cell{
@@ -266,17 +266,19 @@ body{
 }
 
 .compare-row.head .compare-cell{
-  font-size:11px;
-  letter-spacing:0.08em;
+  font-size:12.5px;
+  letter-spacing:0.06em;
   text-transform:uppercase;
-  color:var(--accent-deep);
+  color:#ffffff;
   font-weight:700;
+  padding:15px 14px;
 }
 
 .compare-cell.label{
   font-family:'Space Grotesk', sans-serif;
-  font-weight:600;
-  color:var(--steel-300);
+  font-weight:700;
+  color:var(--accent-deep);
+  background:var(--accent-dim);
 }
 
 .compare-cell.value{
@@ -449,15 +451,16 @@ function fileToBase64(file) {
 async function extractFields(base64, mimeType) {
   const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TAC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
 
-Đọc kỹ ảnh và trích xuất đúng 4 thông tin sau, ở dạng JSON object, KHÔNG kèm bất kỳ chữ nào khác ngoài JSON, không dùng markdown code block:
+Đọc kỹ ảnh và trích xuất thông tin sau, ở dạng JSON object, KHÔNG kèm bất kỳ chữ nào khác ngoài JSON, không dùng markdown code block:
 {
   "name": "họ tên đầy đủ, viết hoa, đúng như trên giấy tờ",
   "dob": "ngày sinh, định dạng DD/MM/YYYY",
   "passport": "số hộ chiếu (passport number), viết hoa không khoảng trắng",
-  "gender": "M hoặc F (Male/Female, Nam/Nữ quy về M/F)"
+  "gender": "M hoặc F (Male/Female, Nam/Nữ quy về M/F)",
+  "cancelled": "true nếu trên giấy tờ có in/đóng dấu/viết tay chữ CANCEL, CANCELED, CANCELLED, VOID, ANNULÉ hoặc dấu hiệu huỷ visa tương đương ở bất kỳ đâu trên ảnh; false nếu không thấy"
 }
 
-Nếu không đọc được một trường nào, để giá trị là null cho trường đó. Chỉ trả về JSON object thuần, không kèm bất kỳ văn bản nào khác.`;
+Nếu không đọc được một trường nào, để giá trị là null cho trường đó (trừ "cancelled" luôn phải là true hoặc false). Chỉ trả về JSON object thuần, không kèm bất kỳ văn bản nào khác.`;
 
   if (!PROXY_URL || PROXY_URL.indexOf("DÁN_URL") !== -1) {
     throw new Error("Chưa cấu hình PROXY_URL trong code. Xem hướng dẫn deploy gemini-proxy.gs.");
@@ -493,7 +496,13 @@ Nếu không đọc được một trường nào, để giá trị là null cho
   }
 
   const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
+  const parsed = JSON.parse(cleaned);
+
+  // Chuẩn hoá "cancelled" về boolean thật, vì Gemini có thể trả về
+  // true/false (boolean) hoặc "true"/"false" (string) tuỳ lần.
+  parsed.cancelled = parsed.cancelled === true || String(parsed.cancelled).toLowerCase() === "true";
+
+  return parsed;
 }
 
 function ImageSlot({ title, subtitle, image, onSelect, status }) {
@@ -585,6 +594,10 @@ function App() {
 
   const bothReady = dataA && dataB;
 
+  const cancelledSide =
+    (dataA && dataA.cancelled ? "A" : null) || (dataB && dataB.cancelled ? "B" : null);
+  const isCancelled = bothReady && (Boolean(dataA && dataA.cancelled) || Boolean(dataB && dataB.cancelled));
+
   const comparisons = bothReady
     ? Object.keys(FIELD_LABELS).map((key) => {
         const a = dataA[key];
@@ -651,7 +664,7 @@ function App() {
           <React.Fragment>
             <div className="compare-table">
               <div className="compare-row head">
-                <div className="compare-cell label">Trường</div>
+                <div className="compare-cell label">Loại giấy tờ</div>
                 <div className="compare-cell value">TAC</div>
                 <div className="compare-cell value">Visa</div>
                 <div className="compare-cell flag"></div>
@@ -672,7 +685,18 @@ function App() {
               ))}
             </div>
 
-            {anyMissing ? (
+            {isCancelled ? (
+              <div className="verdict no">
+                <div className="verdict-icon">✕</div>
+                <div className="verdict-text">
+                  <h2>KHÔNG HỢP LỆ — VISA ĐÃ BỊ HUỶ (CANCELLED)</h2>
+                  <p>
+                    Phát hiện dấu hiệu huỷ (CANCEL/CANCELED/CANCELLED) trên giấy tờ{" "}
+                    {cancelledSide === "A" ? "TAC (ảnh 01)" : "Visa (ảnh 02)"}. Vui lòng kiểm tra lại thủ công trước khi cho qua.
+                  </p>
+                </div>
+              </div>
+            ) : anyMissing ? (
               <div className="verdict no">
                 <div className="verdict-icon">!</div>
                 <div className="verdict-text">
