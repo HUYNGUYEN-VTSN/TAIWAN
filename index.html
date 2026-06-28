@@ -237,6 +237,100 @@ body{
 
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
+.slot-source-menu{
+  position:absolute;
+  inset:0;
+  background:rgba(12,24,48,0.94);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:20px;
+}
+
+.slot-source-btn{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  width:100%;
+  max-width:220px;
+  justify-content:center;
+  background:#ffffff;
+  color:var(--accent-deep);
+  border:none;
+  border-radius:8px;
+  padding:12px 18px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:transform .15s, box-shadow .15s;
+}
+
+.slot-source-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);
+}
+
+.slot-source-cancel{
+  margin-top:4px;
+  background:transparent;
+  border:none;
+  color:var(--steel-400);
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11.5px;
+  cursor:pointer;
+  text-decoration:underline;
+}
+
+.slot-preview-overlay{
+  position:absolute;
+  inset:0;
+  background:#0c1830;
+  display:flex;
+  flex-direction:column;
+}
+
+.slot-preview-overlay img{
+  flex:1;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  min-height:0;
+}
+
+.slot-preview-actions{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background:rgba(0,0,0,0.4);
+}
+
+.slot-preview-btn{
+  flex:1;
+  border:none;
+  border-radius:7px;
+  padding:11px 10px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12.5px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.slot-preview-btn.retake{
+  background:rgba(255,255,255,0.12);
+  color:#ffffff;
+}
+
+.slot-preview-btn.confirm{
+  background:var(--green);
+  color:#ffffff;
+}
+
+.slot-preview-btn.retake:hover{ background:rgba(255,255,255,0.2); }
+.slot-preview-btn.confirm:hover{ background:#0c8a55; }
+
 .compare-table{
   background:var(--navy-900);
   border:1px solid var(--navy-700);
@@ -432,6 +526,7 @@ const FIELD_LABELS = {
   dob: "Ngày sinh",
   passport: "Số hộ chiếu",
   gender: "Giới tính",
+  usaVisaNumber: "Số Visa Mỹ",
 };
 
 function normalizeForCompare(value) {
@@ -485,7 +580,7 @@ async function callProxyOnce(base64, mimeType, prompt) {
 }
 
 async function extractFields(base64, mimeType) {
-  const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TAC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
+  const prompt = `Đây là ảnh giấy tờ tùy thân, có thể là: Thẻ tạm trú Đài Loan (TAC), giấy "Travel Authorization Certificate" của Đài Loan cấp cho người Việt có visa Mỹ, hoặc visa nhập cảnh thật (Mỹ, khối Schengen...).
 
 Đọc kỹ ảnh và trích xuất thông tin sau, ở dạng JSON object, KHÔNG kèm bất kỳ chữ nào khác ngoài JSON, không dùng markdown code block:
 {
@@ -493,6 +588,7 @@ async function extractFields(base64, mimeType) {
   "dob": "ngày sinh, định dạng DD/MM/YYYY",
   "passport": "số hộ chiếu (passport number), viết hoa không khoảng trắng",
   "gender": "M hoặc F (Male/Female, Nam/Nữ quy về M/F)",
+  "usaVisaNumber": "số visa Mỹ (US visa number/foil number). Nếu ảnh là giấy Travel Authorization Certificate có dòng 'Holding a Vietnam passport with USA visa: XXXXXXX' thì lấy đúng số XXXXXXX đó. Nếu ảnh là visa Mỹ thật thì lấy số visa in trên visa (thường là chữ+số, ví dụ M1875390). Nếu giấy tờ không liên quan tới visa Mỹ và không có số này thì để null.",
   "cancelled": "true nếu trên giấy tờ có in/đóng dấu/viết tay chữ CANCEL, CANCELED, CANCELLED, VOID, ANNULÉ hoặc dấu hiệu huỷ visa tương đương ở bất kỳ đâu trên ảnh; false nếu không thấy"
 }
 
@@ -549,7 +645,34 @@ Nếu không đọc được một trường nào, để giá trị là null cho
 }
 
 function ImageSlot({ title, subtitle, image, onSelect, status }) {
-  const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [pendingPreview, setPendingPreview] = useState(null); // { file, url } đang chờ xác nhận
+
+  function openMenu(e) {
+    e.stopPropagation();
+    setShowMenu(true);
+  }
+
+  function handlePicked(file) {
+    setShowMenu(false);
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPendingPreview({ file, url });
+  }
+
+  function confirmPending() {
+    if (!pendingPreview) return;
+    onSelect(pendingPreview.file);
+    setPendingPreview(null);
+  }
+
+  function retakePending() {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview.url);
+    setPendingPreview(null);
+    setShowMenu(true);
+  }
 
   return (
     <div className="slot">
@@ -560,7 +683,7 @@ function ImageSlot({ title, subtitle, image, onSelect, status }) {
 
       <div
         className={"slot-drop" + (image ? " has-image" : "")}
-        onClick={() => inputRef.current && inputRef.current.click()}
+        onClick={openMenu}
       >
         {image ? (
           <img src={image} alt={subtitle} />
@@ -585,16 +708,65 @@ function ImageSlot({ title, subtitle, image, onSelect, status }) {
             <span>Đang đọc dữ liệu...</span>
           </div>
         )}
+
+        {showMenu && (
+          <div className="slot-source-menu" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="slot-source-btn"
+              onClick={() => cameraInputRef.current && cameraInputRef.current.click()}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+                <circle cx="12" cy="14" r="3.2" stroke="currentColor" strokeWidth="1.6"/>
+              </svg>
+              Chụp ảnh
+            </button>
+            <button
+              className="slot-source-btn"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 16V4h16v12M4 16l4-4 3 3 5-5 4 4M4 16v4h16v-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Chọn từ máy
+            </button>
+            <button className="slot-source-cancel" onClick={() => setShowMenu(false)}>Huỷ</button>
+          </div>
+        )}
+
+        {pendingPreview && (
+          <div className="slot-preview-overlay" onClick={(e) => e.stopPropagation()}>
+            <img src={pendingPreview.url} alt="preview" />
+            <div className="slot-preview-actions">
+              <button className="slot-preview-btn retake" onClick={retakePending}>↺ Chụp lại</button>
+              <button className="slot-preview-btn confirm" onClick={confirmPending}>✓ Dùng ảnh này</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <input
-        ref={inputRef}
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         style={{ display: "none" }}
         onChange={(e) => {
           const file = e.target.files && e.target.files[0];
-          if (file) onSelect(file);
+          handlePicked(file);
+          e.target.value = "";
+        }}
+      />
+
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files && e.target.files[0];
+          handlePicked(file);
+          e.target.value = "";
         }}
       />
     </div>
@@ -641,8 +813,20 @@ function App() {
     (dataA && dataA.cancelled ? "A" : null) || (dataB && dataB.cancelled ? "B" : null);
   const isCancelled = bothReady && (Boolean(dataA && dataA.cancelled) || Boolean(dataB && dataB.cancelled));
 
+  // Các trường "tuỳ chọn": chỉ đưa vào so khớp/tính thiếu dữ liệu khi
+  // ít nhất 1 trong 2 ảnh có đọc ra giá trị (vd. không phải giấy tờ nào
+  // cũng có số Visa Mỹ, TAC thường thì không có).
+  const OPTIONAL_FIELDS = ["usaVisaNumber"];
+
+  const activeFieldKeys = bothReady
+    ? Object.keys(FIELD_LABELS).filter((key) => {
+        if (!OPTIONAL_FIELDS.includes(key)) return true;
+        return Boolean(dataA[key]) || Boolean(dataB[key]);
+      })
+    : [];
+
   const comparisons = bothReady
-    ? Object.keys(FIELD_LABELS).map((key) => {
+    ? activeFieldKeys.map((key) => {
         const a = dataA[key];
         const b = dataB[key];
         const match = a && b && normalizeForCompare(a) === normalizeForCompare(b);
@@ -652,7 +836,7 @@ function App() {
 
   const allMatch = comparisons.length > 0 && comparisons.every((c) => c.match);
   const anyMissing =
-    bothReady && Object.keys(FIELD_LABELS).some((k) => !dataA[k] || !dataB[k]);
+    bothReady && activeFieldKeys.some((k) => !dataA[k] || !dataB[k]);
 
   function reset() {
     setImageA(null);
@@ -672,7 +856,7 @@ function App() {
             <div className="header-eyebrow">Quầy thủ tục · Đối chiếu giấy tờ</div>
             <h1>TAC ⇄ VISA CHECK</h1>
             <div className="header-sub">
-              Đọc và so khớp Họ tên, Ngày sinh, Số hộ chiếu, Giới tính giữa hai giấy tờ.
+              Đọc và so khớp Họ tên, Ngày sinh, Số hộ chiếu, Giới tính, Số Visa Mỹ giữa hai giấy tờ.
             </div>
           </div>
           <div className="gate-id">GATE · MANUAL REVIEW</div>
@@ -746,7 +930,7 @@ function App() {
                   <h2>KHÔNG HỢP LỆ</h2>
                   <p>
                     Lý do: thiếu dữ liệu —{" "}
-                    {Object.keys(FIELD_LABELS)
+                    {activeFieldKeys
                       .filter((k) => !dataA[k] || !dataB[k])
                       .map((k) => FIELD_LABELS[k])
                       .join(", ")}{" "}
