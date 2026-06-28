@@ -732,10 +732,10 @@ function App() {
               <div className="verdict no">
                 <div className="verdict-icon">✕</div>
                 <div className="verdict-text">
-                  <h2>KHÔNG HỢP LỆ — VISA ĐÃ BỊ HUỶ (CANCELLED)</h2>
+                  <h2>KHÔNG HỢP LỆ</h2>
                   <p>
-                    Phát hiện dấu hiệu huỷ (CANCEL/CANCELED/CANCELLED) trên giấy tờ{" "}
-                    {cancelledSide === "A" ? "TAC (ảnh 01)" : "Visa (ảnh 02)"}. Vui lòng kiểm tra lại thủ công trước khi cho qua.
+                    Lý do: Visa đã bị huỷ (phát hiện dấu CANCEL/CANCELED/CANCELLED trên giấy tờ{" "}
+                    {cancelledSide === "A" ? "TAC, ảnh 01" : "Visa, ảnh 02"}). Vui lòng kiểm tra lại thủ công trước khi cho qua.
                   </p>
                 </div>
               </div>
@@ -743,8 +743,15 @@ function App() {
               <div className="verdict no">
                 <div className="verdict-icon">!</div>
                 <div className="verdict-text">
-                  <h2>THIẾU DỮ LIỆU — KHÔNG ĐỦ CƠ SỞ ĐỐI CHIẾU</h2>
-                  <p>Một số trường không đọc được từ ảnh. Vui lòng chụp lại rõ hơn hoặc kiểm tra thủ công.</p>
+                  <h2>KHÔNG HỢP LỆ</h2>
+                  <p>
+                    Lý do: thiếu dữ liệu —{" "}
+                    {Object.keys(FIELD_LABELS)
+                      .filter((k) => !dataA[k] || !dataB[k])
+                      .map((k) => FIELD_LABELS[k])
+                      .join(", ")}{" "}
+                    không đọc được từ ảnh. Vui lòng chụp lại rõ hơn hoặc kiểm tra thủ công.
+                  </p>
                 </div>
               </div>
             ) : allMatch ? (
@@ -759,8 +766,15 @@ function App() {
               <div className="verdict no">
                 <div className="verdict-icon">✕</div>
                 <div className="verdict-text">
-                  <h2>KHÔNG HỢP LỆ — DỮ LIỆU KHÔNG KHỚP</h2>
-                  <p>Có ít nhất một trường không khớp giữa hai giấy tờ. Vui lòng kiểm tra lại thủ công.</p>
+                  <h2>KHÔNG HỢP LỆ</h2>
+                  <p>
+                    Lý do:{" "}
+                    {comparisons
+                      .filter((c) => !c.match)
+                      .map((c) => c.label)
+                      .join(", ")}{" "}
+                    không khớp giữa hai giấy tờ. Vui lòng kiểm tra lại thủ công.
+                  </p>
                 </div>
               </div>
             )}
