@@ -543,6 +543,62 @@ function fileToBase64(file) {
   });
 }
 
+// Thu nhỏ ảnh trước khi gửi cho Gemini để tăng tốc upload + xử lý.
+// Giữ cạnh dài nhất tối đa MAX_DIMENSION px (vẫn đủ nét để đọc chữ
+// trên giấy tờ), nén JPEG chất lượng 0.85. Nếu canvas lỗi vì lý do
+// nào đó (vd. ảnh hỏng), fallback về ảnh gốc, không chặn luồng chính.
+function resizeImageToBase64(file, maxDimension) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+        const longest = Math.max(width, height);
+
+        if (longest > maxDimension) {
+          const scale = maxDimension / longest;
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        URL.revokeObjectURL(url);
+        resolve({ base64: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
+    };
+
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(e);
+    };
+
+    img.src = url;
+  });
+}
+
+const MAX_UPLOAD_DIMENSION = 1600;
+
+async function prepareImageForUpload(file) {
+  try {
+    return await resizeImageToBase64(file, MAX_UPLOAD_DIMENSION);
+  } catch (e) {
+    // Resize lỗi (hiếm) -> dùng ảnh gốc để không chặn người dùng
+    const base64 = await fileToBase64(file);
+    return { base64, mimeType: file.type || "image/jpeg" };
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -794,8 +850,8 @@ function App() {
     setStatus("reading");
 
     try {
-      const base64 = await fileToBase64(file);
-      const fields = await extractFields(base64, file.type || "image/jpeg");
+      const { base64, mimeType } = await prepareImageForUpload(file);
+      const fields = await extractFields(base64, mimeType);
       setData(fields);
       setStatus("done");
     } catch (err) {
