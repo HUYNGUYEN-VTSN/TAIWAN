@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TAC ⇄ VISA CHECK</title>
+<title>TACC ⇄ VISA CHECK</title>
 
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -421,7 +421,7 @@ const { useState, useRef } = React;
 // copy URL dạng https://script.google.com/macros/s/XXXX/exec
 // và dán vào đây.
 // =====================================================================
-const PROXY_URL = "https://script.google.com/macros/s/AKfycbzHWbzu1Ix5LzzhQyPnnYUNVQ_tpdXVbRR93VeIthNR-X63wPBB7srimag2w3VVsv3P/exec";
+const PROXY_URL = "https://script.google.com/macros/s/AKfycbxnQHhKOPckxsZ5BYELPCuGLgRzv1UxXt_WEIQq93Nwhn-TExnwfvkyugBkbar1cB-x/exec";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
@@ -447,7 +447,7 @@ function fileToBase64(file) {
 }
 
 async function extractFields(base64, mimeType) {
-  const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TAC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
+  const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TACC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
 
 Đọc kỹ ảnh và trích xuất đúng 4 thông tin sau, ở dạng JSON object, KHÔNG kèm bất kỳ chữ nào khác ngoài JSON, không dùng markdown code block:
 {
@@ -466,7 +466,7 @@ Nếu không đọc được một trường nào, để giá trị là null cho
   const response = await fetch(PROXY_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "text/plain;charset=utf-8",
     },
     body: JSON.stringify({
       base64: base64,
@@ -614,7 +614,7 @@ function App() {
         <div className="header-top">
           <div>
             <div className="header-eyebrow">Quầy thủ tục · Đối chiếu giấy tờ</div>
-            <h1>TAC ⇄ VISA CHECK</h1>
+            <h1>TACC ⇄ VISA CHECK</h1>
             <div className="header-sub">
               Đọc và so khớp Họ tên, Ngày sinh, Số hộ chiếu, Giới tính giữa hai giấy tờ.
             </div>
@@ -631,7 +631,7 @@ function App() {
         <div className="slots">
           <ImageSlot
             title="01"
-            subtitle="TAC Đài Loan"
+            subtitle="TACC Đài Loan"
             image={imageA}
             status={statusA}
             onSelect={(f) => handleSelect(f, "A")}
@@ -652,7 +652,7 @@ function App() {
             <div className="compare-table">
               <div className="compare-row head">
                 <div className="compare-cell label">Trường</div>
-                <div className="compare-cell value">TAC</div>
+                <div className="compare-cell value">TACC</div>
                 <div className="compare-cell value">Visa</div>
                 <div className="compare-cell flag"></div>
               </div>
