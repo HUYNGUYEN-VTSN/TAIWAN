@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TACC ⇄ VISA CHECK</title>
+<title>TAC ⇄ VISA CHECK</title>
 
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -16,17 +16,20 @@
 :root{
   --navy-950:#ffffff;
   --navy-900:#ffffff;
-  --navy-800:#eef2f7;
-  --navy-700:#d7dfea;
-  --steel-400:#6b7c93;
-  --steel-300:#3d4a5c;
-  --paper:#0f2138;
-  --amber:#b8790a;
-  --amber-dim:#f3dfb8;
-  --green:#1c9a5b;
-  --green-dim:#e1f5ea;
-  --red:#d6403f;
-  --red-dim:#fbe4e4;
+  --navy-800:#eef1fb;
+  --navy-700:#d7deef;
+  --steel-400:#647088;
+  --steel-300:#36415a;
+  --paper:#0c1830;
+  --amber:#e8930a;
+  --amber-dim:#fde7bf;
+  --green:#0fa968;
+  --green-dim:#dcf7ea;
+  --red:#e0383f;
+  --red-dim:#fde1e1;
+  --accent:#3454e8;
+  --accent-dim:#e8edfd;
+  --accent-deep:#1c2f6e;
 }
 
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -38,8 +41,9 @@ body{
 .page{
   min-height:100vh;
   background:
-    radial-gradient(circle at 15% 0%, rgba(15,33,56,0.04), transparent 45%),
-    radial-gradient(circle at 90% 100%, rgba(28,154,91,0.05), transparent 40%),
+    radial-gradient(circle at 10% -5%, rgba(52,84,232,0.10), transparent 42%),
+    radial-gradient(circle at 95% 10%, rgba(232,147,10,0.08), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(15,169,104,0.06), transparent 45%),
     var(--navy-950);
   color:var(--paper);
   padding:32px 20px 60px;
@@ -59,7 +63,7 @@ body{
   align-items:baseline;
   justify-content:space-between;
   gap:12px;
-  border-bottom:1px solid var(--navy-700);
+  border-bottom:2px solid var(--accent-deep);
   padding-bottom:16px;
   flex-wrap:wrap;
 }
@@ -67,17 +71,21 @@ body{
 .header-eyebrow{
   font-size:11px;
   letter-spacing:0.18em;
-  color:var(--steel-400);
+  color:var(--accent);
   text-transform:uppercase;
+  font-weight:600;
 }
 
 .header h1{
   font-family:'Space Grotesk', sans-serif;
-  font-size:26px;
+  font-size:32px;
   font-weight:700;
   margin:6px 0 0;
-  color:var(--paper);
   letter-spacing:-0.01em;
+  background:linear-gradient(120deg, var(--accent-deep), var(--accent) 55%, var(--amber));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
 }
 
 .header-sub{
@@ -90,11 +98,14 @@ body{
 .gate-id{
   font-family:'Space Grotesk', sans-serif;
   font-size:13px;
-  color:var(--amber);
-  border:1px solid var(--amber-dim);
-  padding:6px 12px;
-  border-radius:4px;
+  font-weight:700;
+  color:#ffffff;
+  background:linear-gradient(135deg, var(--accent-deep), var(--accent));
+  padding:7px 14px;
+  border-radius:6px;
   white-space:nowrap;
+  letter-spacing:0.03em;
+  box-shadow:0 2px 8px rgba(52,84,232,0.25);
 }
 
 .disclaimer{
@@ -115,73 +126,6 @@ body{
   max-width:920px;
 }
 
-.api-key-box{
-  background:var(--navy-900);
-  border:1px solid var(--navy-700);
-  border-radius:10px;
-  padding:14px 16px;
-  margin-bottom:20px;
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-  box-shadow:0 1px 3px rgba(15,33,56,0.06);
-}
-
-.api-key-box input{
-  flex:1;
-  min-width:200px;
-  background:var(--navy-800);
-  border:1px solid var(--navy-700);
-  border-radius:6px;
-  padding:9px 12px;
-  color:var(--paper);
-  font-family:'IBM Plex Mono', monospace;
-  font-size:12.5px;
-  outline:none;
-}
-
-.api-key-box input:focus{
-  border-color:var(--steel-400);
-}
-
-.api-key-box label{
-  font-size:11.5px;
-  color:var(--steel-400);
-  white-space:nowrap;
-}
-
-.api-key-status{
-  font-size:11px;
-  white-space:nowrap;
-}
-
-.api-key-status.ok{ color:var(--green); }
-.api-key-status.no{ color:var(--steel-400); }
-
-.btn-key-action{
-  font-family:'IBM Plex Mono', monospace;
-  font-size:11px;
-  color:var(--steel-300);
-  background:transparent;
-  border:1px solid var(--navy-700);
-  border-radius:6px;
-  padding:6px 10px;
-  cursor:pointer;
-  white-space:nowrap;
-  transition:border-color .15s, color .15s;
-}
-
-.btn-key-action:hover{
-  border-color:var(--steel-400);
-  color:var(--paper);
-}
-
-.btn-key-action.danger:hover{
-  border-color:var(--red);
-  color:var(--red);
-}
-
 .slots{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -196,9 +140,16 @@ body{
 .slot{
   background:var(--navy-900);
   border:1px solid var(--navy-700);
+  border-top:3px solid var(--accent);
   border-radius:10px;
   padding:16px;
-  box-shadow:0 1px 3px rgba(15,33,56,0.06);
+  box-shadow:0 4px 16px rgba(28,47,110,0.08);
+  transition:box-shadow .2s, transform .2s;
+}
+
+.slot:hover{
+  box-shadow:0 8px 24px rgba(28,47,110,0.13);
+  transform:translateY(-1px);
 }
 
 .slot-head{
@@ -211,8 +162,11 @@ body{
 .slot-index{
   font-family:'Space Grotesk', sans-serif;
   font-size:13px;
-  font-weight:600;
-  color:var(--steel-300);
+  font-weight:700;
+  color:var(--accent-deep);
+  background:var(--accent-dim);
+  padding:3px 10px;
+  border-radius:5px;
 }
 
 .slot-subtitle{
@@ -235,12 +189,12 @@ body{
 }
 
 .slot-drop:hover{
-  border-color:var(--steel-400);
+  border-color:var(--accent);
 }
 
 .slot-drop.has-image{
   border-style:solid;
-  border-color:var(--navy-700);
+  border-color:var(--accent-dim);
 }
 
 .slot-drop img{
@@ -262,7 +216,7 @@ body{
 .slot-overlay{
   position:absolute;
   inset:0;
-  background:rgba(10,22,40,0.88);
+  background:rgba(12,24,48,0.9);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -276,7 +230,7 @@ body{
   width:22px;
   height:22px;
   border-radius:50%;
-  border:2.5px solid rgba(245,185,66,0.25);
+  border:2.5px solid rgba(232,147,10,0.25);
   border-top-color:var(--amber);
   animation:spin 0.8s linear infinite;
 }
@@ -289,7 +243,7 @@ body{
   border-radius:10px;
   overflow:hidden;
   margin-bottom:20px;
-  box-shadow:0 1px 3px rgba(15,33,56,0.06);
+  box-shadow:0 4px 16px rgba(28,47,110,0.08);
 }
 
 .compare-row{
@@ -301,7 +255,7 @@ body{
 .compare-row:last-child{ border-bottom:none; }
 
 .compare-row.head{
-  background:var(--navy-800);
+  background:var(--accent-dim);
 }
 
 .compare-cell{
@@ -315,7 +269,8 @@ body{
   font-size:11px;
   letter-spacing:0.08em;
   text-transform:uppercase;
-  color:var(--steel-400);
+  color:var(--accent-deep);
+  font-weight:700;
 }
 
 .compare-cell.label{
@@ -339,13 +294,13 @@ body{
 }
 
 .match-dot{
-  width:10px;
-  height:10px;
+  width:12px;
+  height:12px;
   border-radius:50%;
 }
 
-.match-dot.ok{ background:var(--green); box-shadow:0 0 8px rgba(61,220,132,0.5); }
-.match-dot.no{ background:var(--red); box-shadow:0 0 8px rgba(255,92,92,0.5); }
+.match-dot.ok{ background:var(--green); box-shadow:0 0 0 4px rgba(15,169,104,0.18); }
+.match-dot.no{ background:var(--red); box-shadow:0 0 0 4px rgba(224,56,63,0.18); }
 
 .verdict{
   display:flex;
@@ -354,39 +309,42 @@ body{
   padding:20px 22px;
   border-radius:10px;
   margin-bottom:20px;
-  border:1px solid;
+  border:2px solid;
+  box-shadow:0 4px 16px rgba(28,47,110,0.06);
 }
 
 .verdict.ok{
-  background:rgba(61,220,132,0.07);
-  border-color:rgba(61,220,132,0.35);
+  background:var(--green-dim);
+  border-color:var(--green);
 }
 
 .verdict.no{
-  background:rgba(255,92,92,0.07);
-  border-color:rgba(255,92,92,0.35);
+  background:var(--red-dim);
+  border-color:var(--red);
 }
 
 .verdict-icon{
   font-family:'Space Grotesk', sans-serif;
-  font-size:20px;
+  font-size:22px;
   font-weight:700;
-  width:42px;
-  height:42px;
+  width:46px;
+  height:46px;
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
   flex-shrink:0;
+  color:#ffffff;
 }
 
-.verdict.ok .verdict-icon{ background:var(--green-dim); color:var(--green); }
-.verdict.no .verdict-icon{ background:var(--red-dim); color:var(--red); }
+.verdict.ok .verdict-icon{ background:var(--green); }
+.verdict.no .verdict-icon{ background:var(--red); }
 
 .verdict-text h2{
   font-family:'Space Grotesk', sans-serif;
-  font-size:17px;
+  font-size:18px;
   margin:0 0 3px;
+  letter-spacing:-0.01em;
 }
 
 .verdict.ok .verdict-text h2{ color:var(--green); }
@@ -417,19 +375,21 @@ body{
 
 .btn-reset{
   font-family:'IBM Plex Mono', monospace;
-  font-size:12px;
-  color:var(--steel-300);
-  background:transparent;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--accent-deep);
+  background:var(--accent-dim);
   border:1px solid var(--navy-700);
   border-radius:6px;
-  padding:9px 16px;
+  padding:10px 18px;
   cursor:pointer;
-  transition:border-color .15s, color .15s;
+  transition:background .15s, transform .15s;
 }
 
 .btn-reset:hover{
-  border-color:var(--steel-400);
-  color:var(--paper);
+  background:var(--accent);
+  color:#ffffff;
+  transform:translateY(-1px);
 }
 
 .footer-note{
@@ -451,11 +411,19 @@ body{
 
 const { useState, useRef } = React;
 
-// API key được người dùng nhập một lần và lưu trong localStorage của trình duyệt
-// (chỉ trên máy đang dùng, không gửi đi đâu ngoài việc gọi thẳng tới Gemini API).
+// =====================================================================
+// CẤU HÌNH PROXY — web này KHÔNG gọi trực tiếp Gemini API nữa.
+// Web gọi qua một Google Apps Script làm trung gian, API key Gemini
+// được giữ an toàn bên trong Apps Script (Script Properties),
+// không xuất hiện ở bất kỳ đâu trong code web này.
+//
+// Cách lấy URL: deploy file gemini-proxy.gs thành Web App,
+// copy URL dạng https://script.google.com/macros/s/XXXX/exec
+// và dán vào đây.
+// =====================================================================
+const PROXY_URL = "https://script.google.com/macros/s/AKfycbzHWbzu1Ix5LzzhQyPnnYUNVQ_tpdXVbRR93VeIthNR-X63wPBB7srimag2w3VVsv3P/exec";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-const STORAGE_KEY = "tacc_visa_gemini_api_key";
 
 const FIELD_LABELS = {
   name: "Họ tên",
@@ -478,8 +446,8 @@ function fileToBase64(file) {
   });
 }
 
-async function extractFields(base64, mimeType, apiKey) {
-  const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TACC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
+async function extractFields(base64, mimeType) {
+  const prompt = `Đây là ảnh giấy tờ tùy thân (có thể là Thẻ tạm trú Đài Loan - TAC, hoặc visa nhập cảnh của một quốc gia khác như Mỹ, khối Schengen...).
 
 Đọc kỹ ảnh và trích xuất đúng 4 thông tin sau, ở dạng JSON object, KHÔNG kèm bất kỳ chữ nào khác ngoài JSON, không dùng markdown code block:
 {
@@ -491,37 +459,34 @@ async function extractFields(base64, mimeType, apiKey) {
 
 Nếu không đọc được một trường nào, để giá trị là null cho trường đó. Chỉ trả về JSON object thuần, không kèm bất kỳ văn bản nào khác.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  if (!PROXY_URL || PROXY_URL.indexOf("DÁN_URL") !== -1) {
+    throw new Error("Chưa cấu hình PROXY_URL trong code. Xem hướng dẫn deploy gemini-proxy.gs.");
+  }
 
-  const response = await fetch(url, {
+  const response = await fetch(PROXY_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64,
-              },
-            },
-          ],
-        },
-      ],
+      base64: base64,
+      mimeType: mimeType,
+      prompt: prompt,
+      model: GEMINI_MODEL,
     }),
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error("Lỗi API (" + response.status + "): " + errText.slice(0, 200));
+    throw new Error("Lỗi proxy (" + response.status + "): " + errText.slice(0, 200));
   }
 
   const data = await response.json();
+
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
   let text = "";
   if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
     text = data.candidates[0].content.parts.map(function(p){ return p.text || ""; }).join("");
@@ -585,14 +550,6 @@ function ImageSlot({ title, subtitle, image, onSelect, status }) {
 }
 
 function App() {
-  const [apiKey, setApiKey] = useState(function () {
-    try {
-      return localStorage.getItem(STORAGE_KEY) || "";
-    } catch (e) {
-      return "";
-    }
-  });
-  const [editingKey, setEditingKey] = useState(false);
   const [imageA, setImageA] = useState(null);
   const [imageB, setImageB] = useState(null);
   const [dataA, setDataA] = useState(null);
@@ -601,35 +558,7 @@ function App() {
   const [statusB, setStatusB] = useState("idle");
   const [error, setError] = useState("");
 
-  const apiKeyReady = apiKey && apiKey.trim().length > 10;
-
-  function saveApiKey(value) {
-    setApiKey(value);
-    try {
-      if (value && value.trim().length > 10) {
-        localStorage.setItem(STORAGE_KEY, value.trim());
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch (e) {
-      // localStorage không khả dụng (vd. chế độ ẩn danh) -> bỏ qua, key vẫn dùng được trong session này
-    }
-  }
-
-  function clearApiKey() {
-    setApiKey("");
-    setEditingKey(true);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {}
-  }
-
   async function handleSelect(file, slot) {
-    if (!apiKeyReady) {
-      setError("Chưa nhập API key Gemini hợp lệ. Vào aistudio.google.com/apikey để lấy key.");
-      return;
-    }
-
     setError("");
     const setImage = slot === "A" ? setImageA : setImageB;
     const setData = slot === "A" ? setDataA : setDataB;
@@ -642,7 +571,7 @@ function App() {
 
     try {
       const base64 = await fileToBase64(file);
-      const fields = await extractFields(base64, file.type || "image/jpeg", apiKey.trim());
+      const fields = await extractFields(base64, file.type || "image/jpeg");
       setData(fields);
       setStatus("done");
     } catch (err) {
@@ -685,7 +614,7 @@ function App() {
         <div className="header-top">
           <div>
             <div className="header-eyebrow">Quầy thủ tục · Đối chiếu giấy tờ</div>
-            <h1>TACC ⇄ VISA CHECK</h1>
+            <h1>TAC ⇄ VISA CHECK</h1>
             <div className="header-sub">
               Đọc và so khớp Họ tên, Ngày sinh, Số hộ chiếu, Giới tính giữa hai giấy tờ.
             </div>
@@ -699,45 +628,10 @@ function App() {
 
       <div className="main">
 
-        <div className="api-key-box">
-          <label>Gemini API Key:</label>
-          {(!apiKeyReady || editingKey) ? (
-            <React.Fragment>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => saveApiKey(e.target.value)}
-                placeholder="AQ.Ab8RN6JnrViLWJX-KJR85NgaVt6JjV563lJBxFVcLzV6vJlyUQ"
-                autoFocus={editingKey}
-              />
-              <span className={"api-key-status " + (apiKeyReady ? "ok" : "no")}>
-                {apiKeyReady ? "● Đã lưu" : "○ Chưa có key"}
-              </span>
-              {apiKeyReady && (
-                <button className="btn-key-action" onClick={() => setEditingKey(false)}>
-                  Xong
-                </button>
-              )}
-            </React.Fragment>
-          ) : (
-            <React.Fragment>
-              <span className="api-key-status ok" style={{ flex: 1 }}>
-                ● Đã lưu trên máy này — không cần nhập lại
-              </span>
-              <button className="btn-key-action" onClick={() => setEditingKey(true)}>
-                Đổi key
-              </button>
-              <button className="btn-key-action danger" onClick={clearApiKey}>
-                Xoá key
-              </button>
-            </React.Fragment>
-          )}
-        </div>
-
         <div className="slots">
           <ImageSlot
             title="01"
-            subtitle="TACC Đài Loan"
+            subtitle="TAC Đài Loan"
             image={imageA}
             status={statusA}
             onSelect={(f) => handleSelect(f, "A")}
@@ -758,7 +652,7 @@ function App() {
             <div className="compare-table">
               <div className="compare-row head">
                 <div className="compare-cell label">Trường</div>
-                <div className="compare-cell value">TACC</div>
+                <div className="compare-cell value">TAC</div>
                 <div className="compare-cell value">Visa</div>
                 <div className="compare-cell flag"></div>
               </div>
