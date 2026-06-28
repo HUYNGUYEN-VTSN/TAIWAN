@@ -14,19 +14,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root{
-  --navy-950:#0a1628;
-  --navy-900:#0f2138;
-  --navy-800:#16304f;
-  --navy-700:#1f3f63;
-  --steel-400:#7a93b0;
-  --steel-300:#a8bdd4;
-  --paper:#eef3f8;
-  --amber:#f5b942;
-  --amber-dim:#7a5c1f;
-  --green:#3ddc84;
-  --green-dim:#1b5c3a;
-  --red:#ff5c5c;
-  --red-dim:#5c1f1f;
+  --navy-950:#ffffff;
+  --navy-900:#ffffff;
+  --navy-800:#eef2f7;
+  --navy-700:#d7dfea;
+  --steel-400:#6b7c93;
+  --steel-300:#3d4a5c;
+  --paper:#0f2138;
+  --amber:#b8790a;
+  --amber-dim:#f3dfb8;
+  --green:#1c9a5b;
+  --green-dim:#e1f5ea;
+  --red:#d6403f;
+  --red-dim:#fbe4e4;
 }
 
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -38,8 +38,8 @@ body{
 .page{
   min-height:100vh;
   background:
-    radial-gradient(circle at 15% 0%, rgba(122,147,176,0.12), transparent 45%),
-    radial-gradient(circle at 90% 100%, rgba(61,220,132,0.06), transparent 40%),
+    radial-gradient(circle at 15% 0%, rgba(15,33,56,0.04), transparent 45%),
+    radial-gradient(circle at 90% 100%, rgba(28,154,91,0.05), transparent 40%),
     var(--navy-950);
   color:var(--paper);
   padding:32px 20px 60px;
@@ -125,12 +125,13 @@ body{
   gap:10px;
   align-items:center;
   flex-wrap:wrap;
+  box-shadow:0 1px 3px rgba(15,33,56,0.06);
 }
 
 .api-key-box input{
   flex:1;
   min-width:200px;
-  background:var(--navy-950);
+  background:var(--navy-800);
   border:1px solid var(--navy-700);
   border-radius:6px;
   padding:9px 12px;
@@ -158,6 +159,29 @@ body{
 .api-key-status.ok{ color:var(--green); }
 .api-key-status.no{ color:var(--steel-400); }
 
+.btn-key-action{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--steel-300);
+  background:transparent;
+  border:1px solid var(--navy-700);
+  border-radius:6px;
+  padding:6px 10px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:border-color .15s, color .15s;
+}
+
+.btn-key-action:hover{
+  border-color:var(--steel-400);
+  color:var(--paper);
+}
+
+.btn-key-action.danger:hover{
+  border-color:var(--red);
+  color:var(--red);
+}
+
 .slots{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -174,6 +198,7 @@ body{
   border:1px solid var(--navy-700);
   border-radius:10px;
   padding:16px;
+  box-shadow:0 1px 3px rgba(15,33,56,0.06);
 }
 
 .slot-head{
@@ -205,7 +230,7 @@ body{
   justify-content:center;
   cursor:pointer;
   overflow:hidden;
-  background:var(--navy-950);
+  background:var(--navy-800);
   transition:border-color .15s;
 }
 
@@ -222,7 +247,7 @@ body{
   width:100%;
   height:100%;
   object-fit:contain;
-  background:#000;
+  background:#1a1a1a;
 }
 
 .slot-empty{
@@ -264,6 +289,7 @@ body{
   border-radius:10px;
   overflow:hidden;
   margin-bottom:20px;
+  box-shadow:0 1px 3px rgba(15,33,56,0.06);
 }
 
 .compare-row{
@@ -374,9 +400,9 @@ body{
 }
 
 .error-box{
-  background:rgba(255,92,92,0.08);
-  border:1px solid rgba(255,92,92,0.3);
-  color:#ffb3b3;
+  background:rgba(214,64,63,0.07);
+  border:1px solid rgba(214,64,63,0.3);
+  color:#a02e2d;
   font-size:12.5px;
   padding:12px 14px;
   border-radius:8px;
@@ -409,7 +435,7 @@ body{
 .footer-note{
   margin-top:28px;
   font-size:10.5px;
-  color:var(--navy-700);
+  color:var(--steel-400);
   text-align:center;
   max-width:600px;
   line-height:1.6;
@@ -425,14 +451,11 @@ body{
 
 const { useState, useRef } = React;
 
-// =====================================================================
-// !!! THAY API KEY CỦA BẠN VÀO ĐÂY (lấy tại aistudio.google.com/apikey) !!!
-// Lưu ý: key sẽ hiện trong source code, ai mở F12 cũng xem được.
-// Chỉ dùng cho web nội bộ, không chia sẻ link ra ngoài.
-// =====================================================================
-const DEFAULT_API_KEY = "DÁN_API_KEY_GEMINI_CỦA_BẠN_VÀO_ĐÂY";
+// API key được người dùng nhập một lần và lưu trong localStorage của trình duyệt
+// (chỉ trên máy đang dùng, không gửi đi đâu ngoài việc gọi thẳng tới Gemini API).
 
 const GEMINI_MODEL = "gemini-2.5-flash";
+const STORAGE_KEY = "tacc_visa_gemini_api_key";
 
 const FIELD_LABELS = {
   name: "Họ tên",
@@ -562,7 +585,14 @@ function ImageSlot({ title, subtitle, image, onSelect, status }) {
 }
 
 function App() {
-  const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
+  const [apiKey, setApiKey] = useState(function () {
+    try {
+      return localStorage.getItem(STORAGE_KEY) || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  const [editingKey, setEditingKey] = useState(false);
   const [imageA, setImageA] = useState(null);
   const [imageB, setImageB] = useState(null);
   const [dataA, setDataA] = useState(null);
@@ -571,7 +601,28 @@ function App() {
   const [statusB, setStatusB] = useState("idle");
   const [error, setError] = useState("");
 
-  const apiKeyReady = apiKey && apiKey.trim().length > 10 && !apiKey.includes("DÁN_API_KEY");
+  const apiKeyReady = apiKey && apiKey.trim().length > 10;
+
+  function saveApiKey(value) {
+    setApiKey(value);
+    try {
+      if (value && value.trim().length > 10) {
+        localStorage.setItem(STORAGE_KEY, value.trim());
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (e) {
+      // localStorage không khả dụng (vd. chế độ ẩn danh) -> bỏ qua, key vẫn dùng được trong session này
+    }
+  }
+
+  function clearApiKey() {
+    setApiKey("");
+    setEditingKey(true);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+  }
 
   async function handleSelect(file, slot) {
     if (!apiKeyReady) {
@@ -650,15 +701,37 @@ function App() {
 
         <div className="api-key-box">
           <label>Gemini API Key:</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="AQ.Ab8RN6JJ510cNFswYHLHeNz5HLJy9O6uN9RwoVtKjaWpc0F82w"
-          />
-          <span className={"api-key-status " + (apiKeyReady ? "ok" : "no")}>
-            {apiKeyReady ? "● Sẵn sàng" : "○ Chưa có key"}
-          </span>
+          {(!apiKeyReady || editingKey) ? (
+            <React.Fragment>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => saveApiKey(e.target.value)}
+                placeholder="AQ.Ab8RN6JnrViLWJX-KJR85NgaVt6JjV563lJBxFVcLzV6vJlyUQ"
+                autoFocus={editingKey}
+              />
+              <span className={"api-key-status " + (apiKeyReady ? "ok" : "no")}>
+                {apiKeyReady ? "● Đã lưu" : "○ Chưa có key"}
+              </span>
+              {apiKeyReady && (
+                <button className="btn-key-action" onClick={() => setEditingKey(false)}>
+                  Xong
+                </button>
+              )}
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <span className="api-key-status ok" style={{ flex: 1 }}>
+                ● Đã lưu trên máy này — không cần nhập lại
+              </span>
+              <button className="btn-key-action" onClick={() => setEditingKey(true)}>
+                Đổi key
+              </button>
+              <button className="btn-key-action danger" onClick={clearApiKey}>
+                Xoá key
+              </button>
+            </React.Fragment>
+          )}
         </div>
 
         <div className="slots">
