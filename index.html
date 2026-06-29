@@ -199,7 +199,7 @@ function resize(file) {
   });
 }
 
-/* ===== GỌI AI THỜI GIAN THỰC ===== */
+/* ===== GỌI AI THỜI GIAN THỰC (Đã sửa lỗi đọc dữ liệu) ===== */
 async function callAI(base64, mime) {
   try {
     const res = await fetch(SCRIPT_URL, {
@@ -209,21 +209,29 @@ async function callAI(base64, mime) {
         base64,
         mimeType: mime,
         token: SECRET_TOKEN,
-        prompt: `Extract data and return ONLY a valid JSON object with keys: name, dob, passport, gender. Do not include markdown formatting.`
+        prompt: `Extract data: name, dob, passport, gender.`
       })
     });
 
     if (!res.ok) return null;
     const json = await res.json();
-    let text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      return JSON.parse(match[0]);
-    }
-    return null;
+    // 1. Lấy chuỗi text chứa JSON sạch do Gemini trả về qua GAS
+    let text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!text) return null;
+    
+    // 2. Parse chuỗi text đó thành Object Javascript để dùng
+    const data = JSON.parse(text);
+    
+    // Trả về object có cấu trúc chuẩn
+    return {
+      name: data.name || "-",
+      dob: data.dob || "-",
+      passport: data.passport || "-",
+      gender: data.gender || "-"
+    };
   } catch (e) {
-    console.error("Lỗi gọi AI hoặc Parse JSON:", e);
+    console.error("Lỗi parse dữ liệu từ API:", e);
     return null;
   }
 }
