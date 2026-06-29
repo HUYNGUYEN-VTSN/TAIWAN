@@ -204,7 +204,6 @@ async function callAI(base64, mime) {
   try {
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
-      // ĐỔI THÀNH text/plain để né bộ lọc CORS của Google Apps Script
       headers: { "Content-Type": "text/plain" }, 
       body: JSON.stringify({
         base64,
@@ -214,17 +213,30 @@ async function callAI(base64, mime) {
       })
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("Lỗi HTTP Status:", res.status);
+      return null;
+    }
+
     const json = await res.json();
     
-    // 1. Lấy chuỗi text chứa JSON sạch do Gemini trả về qua GAS
-    let text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    if (!text) return null;
+    // === DÒNG KIỂM TRA QUAN TRỌNG ===
+    // Ép trình duyệt phải in toàn bộ kết quả nhận được từ Google bằng chữ màu xanh
+    console.log("%c DỮ LIỆU THỰC TẾ NHẬN ĐƯỢC:", "color: #00e676; font-weight: bold;", json);
+
+    // Kiểm tra xem cấu trúc có đúng chuẩn của Gemini không
+    if (!json.candidates || !json.candidates[0]) {
+      console.warn("Cấu trúc JSON không có thuộc tính 'candidates'. Có thể Google Apps Script trả về lỗi ẩn:", json);
+      return null;
+    }
+
+    let text = json.candidates[0].content?.parts?.[0]?.text || "";
+    if (!text) {
+      console.warn("Thuộc tính 'text' bị rỗng. Chi tiết content:", json.candidates[0].content);
+      return null;
+    }
     
-    // 2. Parse chuỗi text đó thành Object Javascript để dùng
     const data = JSON.parse(text);
-    
-    // Trả về object có cấu trúc chuẩn
     return {
       name: data.name || "-",
       dob: data.dob || "-",
@@ -232,11 +244,10 @@ async function callAI(base64, mime) {
       gender: data.gender || "-"
     };
   } catch (e) {
-    console.error("Lỗi parse dữ liệu từ API:", e);
+    console.error("Quá trình xử lý callAI gặp ngoại lệ sập luồng:", e);
     return null;
   }
 }
-
 /* ===== XỬ LÝ CHÍNH ĐA LUỒNG ===== */
 async function handle(file, type) {
   if (!file) return;
