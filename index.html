@@ -569,7 +569,7 @@ function resizeImageToBase64(file, maxDimension) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
         URL.revokeObjectURL(url);
         resolve({ base64: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       } catch (e) {
@@ -587,7 +587,7 @@ function resizeImageToBase64(file, maxDimension) {
   });
 }
 
-const MAX_UPLOAD_DIMENSION = 1600;
+const MAX_UPLOAD_DIMENSION = 2200;
 
 async function prepareImageForUpload(file) {
   try {
