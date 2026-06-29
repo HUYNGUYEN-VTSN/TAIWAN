@@ -130,31 +130,29 @@ img{
 
 <div class="grid">
 
-  <!-- TAC -->
   <div class="card">
-    <button class="btn" onclick="fileA.click()">📷 TAC</button>
-    <input type="file" id="fileA" accept="image/*" capture="environment">
+    <button class="btn" onclick="document.getElementById('fileA').click()">📷 TAC</button>
+    <input type="file" id="fileA" accept="image/*" capture="environment" style="display:none;">
     <img id="imgA">
     <div id="stA" class="status">Chưa xử lý</div>
   </div>
 
-  <!-- VISA -->
   <div class="card">
-    <button class="btn" onclick="fileB.click()">📷 VISA</button>
-    <input type="file" id="fileB" accept="image/*" capture="environment">
+    <button class="btn" onclick="document.getElementById('fileB').click()">📷 VISA</button>
+    <input type="file" id="fileB" accept="image/*" capture="environment" style="display:none;">
     <img id="imgB">
     <div id="stB" class="status">Chưa xử lý</div>
   </div>
 
 </div>
 
-<!-- RESULT -->
 <div class="compare" id="out">
   ⏳ Chờ dữ liệu...
 </div>
 
 </div>
 
+<script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnQHhKOPckxsZ5BYELPCuGLgRzv1UxXt_WEIQq93Nwhn-TExnwfvkyugBkbar1cB-x/exec";
 const SECRET_TOKEN = "";
 
@@ -166,7 +164,7 @@ const state = {
   loadingB: false
 };
 
-/* ===== RESIZE ẢNH SIÊU TỐC (Sử dụng Object URL thay vì FileReader) ===== */
+/* ===== RESIZE ẢNH SIÊU TỐC ===== */
 function resize(file) {
   return new Promise((res, rej) => {
     const img = new Image();
@@ -184,7 +182,6 @@ function resize(file) {
       const ctx = c.getContext("2d");
       ctx.drawImage(img, 0, 0, c.width, c.height);
 
-      // Giảm chất lượng xuống 0.65 để dung lượng nhỏ hơn, truyền qua mạng nhanh hơn hẳn
       c.toBlob(b => {
         const fr = new FileReader();
         fr.onloadend = () => res(fr.result.split(",")[1]);
@@ -212,7 +209,6 @@ async function callAI(base64, mime) {
         base64,
         mimeType: mime,
         token: SECRET_TOKEN,
-        // Ép AI phản hồi định dạng JSON thuần để parse nhanh hơn
         prompt: `Extract data and return ONLY a valid JSON object with keys: name, dob, passport, gender. Do not include markdown formatting.`
       })
     });
@@ -221,7 +217,6 @@ async function callAI(base64, mime) {
     const json = await res.json();
     let text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    // Tách JSON bằng Regex phòng trường hợp AI tự thêm cụm ```json
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
       return JSON.parse(match[0]);
@@ -241,17 +236,14 @@ async function handle(file, type) {
   const imgEl = document.getElementById(isA ? "imgA" : "imgB");
   const stEl = document.getElementById(isA ? "stA" : "stB");
 
-  // Hiển thị ảnh ngay lập tức để tạo cảm giác mượt mà (UI/UX phản hồi nhanh)
   const previewUrl = URL.createObjectURL(file);
   imgEl.src = previewUrl;
   stEl.innerHTML = "⏳ đang xử lý...";
   
-  // Reset data cũ của bên đang chụp
   state[type] = null;
   renderWaiting();
 
   try {
-    // Chạy đồng thời việc nén ảnh và upload
     const base64 = await resize(file);
     const data = await callAI(base64, file.type);
 
@@ -263,7 +255,6 @@ async function handle(file, type) {
     stEl.innerHTML = "<span class='ok'>✔ done</span>";
     state[type] = data;
 
-    // Nếu cả 2 bên đã có dữ liệu -> Tiến hành so sánh ngay
     if (state.a && state.b) {
       renderResult();
     }
