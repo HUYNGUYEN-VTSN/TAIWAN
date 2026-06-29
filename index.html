@@ -13,18 +13,45 @@ body{
   color:#e8eefc;
 }
 
-.wrap{max-width:900px;margin:auto;padding:16px}
+.wrap{
+  max-width:1100px;
+  margin:auto;
+  padding:12px;
+}
 
-h1{text-align:center;color:#4da3ff;margin:10px 0}
+h1{
+  text-align:center;
+  color:#4da3ff;
+  margin:10px 0 0;
+  font-size:20px;
+}
 
-.sub{text-align:center;opacity:.7;font-size:12px}
+.sub{
+  text-align:center;
+  font-size:12px;
+  opacity:.7;
+  margin-bottom:10px;
+}
+
+/* ===== HORIZONTAL LAYOUT ===== */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+}
 
 .card{
   background:#111a2e;
   border:1px solid #22304f;
   border-radius:12px;
-  padding:12px;
-  margin-top:12px;
+  padding:10px;
 }
 
 .btn{
@@ -35,19 +62,63 @@ h1{text-align:center;color:#4da3ff;margin:10px 0}
   background:#1f6fff;
   color:#fff;
   font-weight:600;
+  font-size:14px;
 }
 
-img{width:100%;border-radius:10px;margin-top:10px}
+img{
+  width:100%;
+  border-radius:10px;
+  margin-top:8px;
+  max-height:240px;
+  object-fit:contain;
+  background:#000;
+}
 
 .status{
+  margin-top:8px;
+  font-size:12px;
   text-align:center;
-  font-size:13px;
-  margin-top:10px;
 }
 
-.ok{color:#00e676;font-weight:bold}
-.bad{color:#ff5252;font-weight:bold}
-.warn{color:#ffb74d;font-weight:bold}
+.ok{color:#00e676;font-weight:700}
+.bad{color:#ff5252;font-weight:700}
+.warn{color:#ffb74d;font-weight:700}
+
+.compare{
+  margin-top:12px;
+  background:#0f1a33;
+  border:1px solid #22304f;
+  border-radius:12px;
+  padding:10px;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:120px 1fr 1fr;
+  gap:6px;
+  padding:6px 0;
+  border-bottom:1px solid #1c2742;
+  font-size:12px;
+}
+
+.label{
+  color:#8fb3ff;
+}
+
+.good{
+  color:#00e676;
+}
+
+.badc{
+  color:#ff5252;
+}
+
+.big{
+  text-align:center;
+  font-size:20px;
+  margin-top:10px;
+  font-weight:800;
+}
 </style>
 </head>
 
@@ -55,26 +126,31 @@ img{width:100%;border-radius:10px;margin-top:10px}
 <div class="wrap">
 
 <h1>VISA MATCH PRO</h1>
-<div class="sub">TAC • VISA • AI CHECK</div>
+<div class="sub">TACC • VISA • REALTIME CHECK</div>
 
-<div class="card">
-<button class="btn" onclick="fileA.click()">📷 CHỤP TAC</button>
-<input type="file" id="fileA" accept="image/*" capture="environment">
-<img id="imgA">
-<div id="stA" class="status">Chưa xử lý</div>
+<div class="grid">
+
+  <!-- TACC -->
+  <div class="card">
+    <button class="btn" onclick="fileA.click()">📷 TACC</button>
+    <input type="file" id="fileA" accept="image/*" capture="environment">
+    <img id="imgA">
+    <div id="stA" class="status">Chưa xử lý</div>
+  </div>
+
+  <!-- VISA -->
+  <div class="card">
+    <button class="btn" onclick="fileB.click()">📷 VISA</button>
+    <input type="file" id="fileB" accept="image/*" capture="environment">
+    <img id="imgB">
+    <div id="stB" class="status">Chưa xử lý</div>
+  </div>
+
 </div>
 
-<div class="card">
-<button class="btn" onclick="fileB.click()">📷 CHỤP VISA</button>
-<input type="file" id="fileB" accept="image/*" capture="environment">
-<img id="imgB">
-<div id="stB" class="status">Chưa xử lý</div>
-</div>
-
-<button class="btn" onclick="compare()">⚡ SO SÁNH</button>
-
-<div class="card">
-<div id="out"></div>
+<!-- RESULT -->
+<div class="compare" id="out">
+  ⏳ Chờ dữ liệu...
 </div>
 
 </div>
@@ -83,120 +159,124 @@ img{width:100%;border-radius:10px;margin-top:10px}
 const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL";
 const SECRET_TOKEN = "";
 
-let dataA = null;
-let dataB = null;
-let doneA = false;
-let doneB = false;
+let A=null,B=null;
+let doneA=false,doneB=false;
 
-function toBase64(file){
+/* ===== RESIZE IMAGE (FAST) ===== */
+function resize(file){
   return new Promise(res=>{
+    const img=new Image();
     const r=new FileReader();
-    r.onload=()=>res(r.result.split(",")[1]);
+
+    r.onload=e=>img.src=e.target.result;
+
+    img.onload=()=>{
+      const c=document.createElement("canvas");
+      const scale=1024/img.width;
+
+      c.width=1024;
+      c.height=img.height*scale;
+
+      const ctx=c.getContext("2d");
+      ctx.drawImage(img,0,0,c.width,c.height);
+
+      c.toBlob(b=>{
+        const fr=new FileReader();
+        fr.onloadend=()=>res(fr.result.split(",")[1]);
+        fr.readAsDataURL(b);
+      },"image/jpeg",0.7);
+    };
+
     r.readAsDataURL(file);
   });
 }
 
-async function callAI(base64,mime,type){
-
-  const res = await fetch(SCRIPT_URL,{
+/* ===== CALL AI ===== */
+async function callAI(base64,mime){
+  const res=await fetch(SCRIPT_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       base64,
       mimeType:mime,
       token:SECRET_TOKEN,
-      prompt:`Extract JSON: name, dob, passport, gender`
+      prompt:`Extract JSON name,dob,passport,gender`
     })
   });
 
-  const json = await res.json();
-
-  const text =
-    json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const json=await res.json();
+  const text=json.candidates?.[0]?.content?.parts?.[0]?.text||"";
 
   try{
-    return JSON.parse(text.replace(/```/g,"").trim());
+    return JSON.parse(text.replace(/```/g,""));
   }catch(e){
     return null;
   }
 }
 
+/* ===== HANDLE ===== */
 async function handle(file,type){
 
-  const img = document.getElementById(type==="a"?"imgA":"imgB");
-  const st = document.getElementById(type==="a"?"stA":"stB");
+  const img=document.getElementById(type==="a"?"imgA":"imgB");
+  const st=document.getElementById(type==="a"?"stA":"stB");
 
-  img.src = URL.createObjectURL(file);
+  img.src=URL.createObjectURL(file);
+  st.innerHTML="⏳ đang xử lý...";
 
-  st.innerHTML = "⏳ Đang xử lý...";
-
-  const base64 = await toBase64(file);
-
-  const data = await callAI(base64,file.type,type);
+  const base64=await resize(file);
+  const data=await callAI(base64,file.type);
 
   if(!data){
-    st.innerHTML = "<span class='warn'>⚠ Không đọc được dữ liệu</span>";
+    st.innerHTML="<span class='warn'>⚠ lỗi đọc</span>";
     return;
   }
 
-  st.innerHTML = "<span class='ok'>✔ Xong</span>";
+  st.innerHTML="<span class='ok'>✔ done</span>";
 
-  if(type==="a"){
-    dataA=data;
-    doneA=true;
-  } else {
-    dataB=data;
-    doneB=true;
-  }
+  if(type==="a"){A=data;doneA=true;}
+  else {B=data;doneB=true;}
+
+  if(doneA&&doneB) render();
 }
 
 fileA.onchange=e=>handle(e.target.files[0],"a");
 fileB.onchange=e=>handle(e.target.files[0],"b");
 
-function norm(v){
-  return (v||"").toString().trim().toLowerCase();
+/* ===== COMPARE ===== */
+function same(a,b){
+  return (a||"").toString().trim().toLowerCase()===
+         (b||"").toString().trim().toLowerCase();
 }
 
-function compare(){
+function render(){
 
-  if(!doneA || !doneB){
-    alert("⏳ Ảnh chưa xử lý xong!");
-    return;
-  }
-
-  const check=(k)=>{
-    return norm(dataA[k])===norm(dataB[k]);
-  };
+  const fields=[
+    ["NAME","name"],
+    ["DOB","dob"],
+    ["PASSPORT","passport"],
+    ["GENDER","gender"]
+  ];
 
   let html="";
 
-  function row(label,key){
-    const ok=check(key);
+  let pass=true;
+
+  fields.forEach(f=>{
+    const ok=same(A[f[1]],B[f[1]]);
+    if(!ok) pass=false;
+
     html+=`
-    <div>
-      <b>${label}</b> :
-      ${ok? "🟢 OK":"🔴 FAIL"}<br/>
-      A: ${dataA[key]}<br/>
-      B: ${dataB[key]}<br/><br/>
+    <div class="row">
+      <div class="label">${f[0]}</div>
+      <div class="${ok?'good':'badc'}">${A[f[1]]||"-"}</div>
+      <div class="${ok?'good':'badc'}">${B[f[1]]||"-"}</div>
     </div>`;
-  }
-
-  row("NAME","name");
-  row("DOB","dob");
-  row("PASSPORT","passport");
-  row("GENDER","gender");
-
-  const all =
-    check("name") &&
-    check("dob") &&
-    check("passport") &&
-    check("gender");
+  });
 
   html+=`
-  <hr/>
-  <h2 style="text-align:center">
-    ${all ? "🟢 PASS" : "🔴 FAIL"}
-  </h2>`;
+  <div class="big ${pass?'good':'badc'}">
+    ${pass?"PASS 🟢":"FAIL 🔴"}
+  </div>`;
 
   document.getElementById("out").innerHTML=html;
 }
