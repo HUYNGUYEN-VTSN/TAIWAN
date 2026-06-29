@@ -803,18 +803,25 @@ Nếu không đọc được một trường nào, để giá trị là null cho
     } catch (err) {
       lastErr = err;
       const is429 = err.status === 429 || /429|quota|RESOURCE_EXHAUSTED/i.test(err.message || "");
+      const is503 = err.status === 503 || /503|UNAVAILABLE|high demand|overloaded/i.test(err.message || "");
+      const isTransient = is429 || is503;
       const isLastAttempt = attempt === MAX_RETRIES;
 
-      if (!is429 || isLastAttempt) {
+      if (!isTransient || isLastAttempt) {
         if (is429) {
           throw new Error(
             "Đã hết lượt gọi AI trong khoảng thời gian này (quota). Vui lòng đợi khoảng 1 phút rồi thử lại, hoặc liên hệ người quản trị nếu lỗi này lặp lại nhiều lần."
           );
         }
+        if (is503) {
+          throw new Error(
+            "Hệ thống AI (Gemini) đang quá tải tạm thời do nhiều người dùng cùng lúc. Vui lòng thử lại sau khoảng 30 giây - 1 phút."
+          );
+        }
         throw err;
       }
 
-      // Gặp 429 và còn lượt thử -> đợi rồi thử lại, không cần người dùng làm gì
+      // Gặp lỗi tạm thời (429/503) và còn lượt thử -> đợi rồi thử lại, không cần người dùng làm gì
       await sleep(RETRY_DELAY_MS);
     }
   }
@@ -1030,7 +1037,7 @@ function App() {
     <div className="page">
       <div className="header">
         <div className="title-card">
-          <div className="title-icon">✅</div>
+          <div className="title-icon">⇄</div>
           <h1>KIỂM TRA TAC ĐÀI LOAN</h1>
         </div>
       </div>
