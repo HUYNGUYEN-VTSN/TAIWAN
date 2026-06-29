@@ -543,31 +543,146 @@ function fileToBase64(file) {
   });
 }
 
-// Thu nhỏ ảnh trước khi gửi cho Gemini để tăng tốc upload + xử lý.
-// Giữ cạnh dài nhất tối đa MAX_DIMENSION px (vẫn đủ nét để đọc chữ
-// trên giấy tờ), nén JPEG chất lượng 0.85. Nếu canvas lỗi vì lý do
-// nào đó (vd. ảnh hỏng), fallback về ảnh gốc, không chặn luồng chính.
-function resizeImageToBase64(file, maxDimension) {
+// Đọc EXIF Orientation từ file ảnh JPEG (camera điện thoại luôn gắn cờ
+// này khi chụp xoay máy). Trả về số 1-8 theo chuẩn EXIF, hoặc 1 (mặc
+// định, không xoay) nếu không tìm thấy / không phải JPEG / lỗi đọc.
+function getExifOrientation(file) {
+  return new Promise((resolve) => {
+    if (!file || file.type !== "image/jpeg") {
+      resolve(1);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const view = new DataView(e.target.result);
+        if (view.getUint16(0, false) !== 0xffd8) {
+          resolve(1);
+          return;
+        }
+        const length = view.byteLength;
+        let offset = 2;
+        while (offset < length) {
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if (marker === 0xffe1) {
+            if (view.getUint32(offset + 2, false) !== 0x45786966) {
+              resolve(1);
+              return;
+            }
+            const little = view.getUint16(offset + 8, false) === 0x4949;
+            const tiffOffset = offset + 8;
+            const firstIFDOffset = view.getUint32(tiffOffset + 4, little);
+            const dirOffset = tiffOffset + firstIFDOffset;
+            const tagsCount = view.getUint16(dirOffset, little);
+            for (let i = 0; i < tagsCount; i++) {
+              const entryOffset = dirOffset + 2 + i * 12;
+              const tag = view.getUint16(entryOffset, little);
+              if (tag === 0x0112) {
+                resolve(view.getUint16(entryOffset + 8, little));
+                return;
+              }
+            }
+            resolve(1);
+            return;
+          } else if ((marker & 0xff00) !== 0xff00) {
+            break;
+          } else {
+            offset += view.getUint16(offset, false);
+          }
+        }
+        resolve(1);
+      } catch (err) {
+        resolve(1);
+      }
+    };
+    reader.onerror = () => resolve(1);
+    // Chỉ cần đọc 128KB đầu là đủ tìm EXIF, không cần đọc cả file
+    reader.readAsArrayBuffer(file.slice(0, 131072));
+  });
+}
+
+// Thu nhỏ ảnh trước khi gửi cho Gemini để tăng tốc upload + xử lý,
+// đồng thời XOAY ẢNH ĐÚNG CHIỀU theo EXIF Orientation trước khi vẽ
+// vào canvas — bắt buộc phải làm vì canvas KHÔNG tự đọc cờ xoay này.
+// Ảnh chụp trực tiếp từ camera điện thoại hầu như luôn có cờ EXIF
+// (ví dụ orientation=6 khi chụp đứng), nếu bỏ qua bước này thì ảnh
+// gửi cho Gemini sẽ bị xoay sai góc -> đọc chữ thất bại, dù trên máy
+// (ảnh chọn từ thư mục, ít khi có cờ lạ) vẫn chạy bình thường.
+// Giữ cạnh dài nhất tối đa maxDimension px, nén JPEG chất lượng 0.92.
+// Nếu canvas lỗi vì lý do nào đó (vd. ảnh hỏng), fallback về ảnh gốc,
+// không chặn luồng chính.
+async function resizeImageToBase64(file, maxDimension) {
+  const orientation = await getExifOrientation(file);
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
 
     img.onload = () => {
       try {
-        let { width, height } = img;
-        const longest = Math.max(width, height);
+        const srcW = img.width;
+        const srcH = img.height;
 
+        // Với orientation 5-8, ảnh gốc bị xoay 90°/270° nên chiều
+        // rộng/cao thực tế sau khi xoay sẽ đảo ngược so với pixel gốc.
+        const swapDimensions = orientation >= 5 && orientation <= 8;
+        let outW = swapDimensions ? srcH : srcW;
+        let outH = swapDimensions ? srcW : srcH;
+
+        const longest = Math.max(outW, outH);
         if (longest > maxDimension) {
           const scale = maxDimension / longest;
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
+          outW = Math.round(outW * scale);
+          outH = Math.round(outH * scale);
         }
 
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
+
+        // Kích thước cần vẽ ảnh gốc vào (trước khi áp biến đổi xoay),
+        // để sau khi xoay sẽ lấp đúng khung outW x outH.
+        const drawW = swapDimensions ? outH : outW;
+        const drawH = swapDimensions ? outW : outH;
+
+        switch (orientation) {
+          case 2: // lật ngang
+            ctx.translate(outW, 0);
+            ctx.scale(-1, 1);
+            break;
+          case 3: // xoay 180°
+            ctx.translate(outW, outH);
+            ctx.rotate(Math.PI);
+            break;
+          case 4: // lật dọc
+            ctx.translate(0, outH);
+            ctx.scale(1, -1);
+            break;
+          case 5: // lật ngang + xoay 90° CW
+            ctx.rotate(0.5 * Math.PI);
+            ctx.scale(1, -1);
+            break;
+          case 6: // xoay 90° CW (phổ biến nhất khi chụp đứng bằng điện thoại)
+            ctx.rotate(0.5 * Math.PI);
+            ctx.translate(0, -outW);
+            break;
+          case 7: // lật ngang + xoay 270° CW
+            ctx.rotate(-0.5 * Math.PI);
+            ctx.translate(-outH, 0);
+            ctx.scale(1, -1);
+            break;
+          case 8: // xoay 270° CW
+            ctx.rotate(-0.5 * Math.PI);
+            ctx.translate(-outH, 0);
+            break;
+          default:
+            // orientation 1 hoặc không xác định -> không cần biến đổi
+            break;
+        }
+
+        ctx.drawImage(img, 0, 0, drawW, drawH);
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
         URL.revokeObjectURL(url);
@@ -670,8 +785,28 @@ Nếu không đọc được một trường nào, để giá trị là null cho
         text = data.candidates[0].content.parts.map(function(p){ return p.text || ""; }).join("");
       }
 
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
+      let cleaned = text.replace(/```json|```/g, "").trim();
+
+      // Phòng trường hợp Gemini lỡ thêm chữ giải thích trước/sau JSON
+      // -> chỉ lấy phần từ dấu { đầu tới dấu } cuối cùng.
+      const firstBrace = cleaned.indexOf("{");
+      const lastBrace = cleaned.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        const snippet = cleaned.slice(0, 160).replace(/\s+/g, " ");
+        throw new Error(
+          "AI trả về dữ liệu không đúng định dạng (có thể do ảnh quá mờ/nghiêng để đọc). Phản hồi: \"" +
+            snippet +
+            (cleaned.length > 160 ? "..." : "") +
+            "\""
+        );
+      }
 
       // Chuẩn hoá "cancelled" về boolean thật, vì Gemini có thể trả về
       // true/false (boolean) hoặc "true"/"false" (string) tuỳ lần.
