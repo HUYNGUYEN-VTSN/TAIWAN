@@ -199,12 +199,13 @@ function resize(file) {
   });
 }
 
-/* ===== GỌI AI THỜI GIAN THỰC (Đã sửa lỗi đọc dữ liệu) ===== */
+/* ===== GỌI AI THỜI GIAN THỰC (Đã fix lỗi CORS bằng text/plain) ===== */
 async function callAI(base64, mime) {
   try {
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // ĐỔI THÀNH text/plain để né bộ lọc CORS của Google Apps Script
+      headers: { "Content-Type": "text/plain" }, 
       body: JSON.stringify({
         base64,
         mimeType: mime,
