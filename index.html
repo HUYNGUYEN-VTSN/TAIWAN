@@ -126,13 +126,13 @@ img{
 <div class="wrap">
 
 <h1>VISA MATCH PRO</h1>
-<div class="sub">TACC • VISA • REALTIME CHECK</div>
+<div class="sub">TAC • VISA • REALTIME CHECK</div>
 
 <div class="grid">
 
-  <!-- TACC -->
+  <!-- TAC -->
   <div class="card">
-    <button class="btn" onclick="fileA.click()">📷 TACC</button>
+    <button class="btn" onclick="fileA.click()">📷 TAC</button>
     <input type="file" id="fileA" accept="image/*" capture="environment">
     <img id="imgA">
     <div id="stA" class="status">Chưa xử lý</div>
@@ -155,130 +155,174 @@ img{
 
 </div>
 
-<script>
-const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnQHhKOPckxsZ5BYELPCuGLgRzv1UxXt_WEIQq93Nwhn-TExnwfvkyugBkbar1cB-x/exec";
 const SECRET_TOKEN = "";
 
-let A=null,B=null;
-let doneA=false,doneB=false;
+// State lưu trữ dữ liệu của 2 bên
+const state = {
+  a: null,
+  b: null,
+  loadingA: false,
+  loadingB: false
+};
 
-/* ===== RESIZE IMAGE (FAST) ===== */
-function resize(file){
-  return new Promise(res=>{
-    const img=new Image();
-    const r=new FileReader();
+/* ===== RESIZE ẢNH SIÊU TỐC (Sử dụng Object URL thay vì FileReader) ===== */
+function resize(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url); // Giải phóng bộ nhớ ngay
+      const c = document.createElement("canvas");
+      const maxW = 1024;
+      const scale = img.width > maxW ? maxW / img.width : 1;
 
-    r.onload=e=>img.src=e.target.result;
+      c.width = img.width * scale;
+      c.height = img.height * scale;
 
-    img.onload=()=>{
-      const c=document.createElement("canvas");
-      const scale=1024/img.width;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, c.width, c.height);
 
-      c.width=1024;
-      c.height=img.height*scale;
-
-      const ctx=c.getContext("2d");
-      ctx.drawImage(img,0,0,c.width,c.height);
-
-      c.toBlob(b=>{
-        const fr=new FileReader();
-        fr.onloadend=()=>res(fr.result.split(",")[1]);
+      // Giảm chất lượng xuống 0.65 để dung lượng nhỏ hơn, truyền qua mạng nhanh hơn hẳn
+      c.toBlob(b => {
+        const fr = new FileReader();
+        fr.onloadend = () => res(fr.result.split(",")[1]);
+        fr.onerror = rej;
         fr.readAsDataURL(b);
-      },"image/jpeg",0.7);
+      }, "image/jpeg", 0.65);
     };
 
-    r.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      rej(new Error("Không thể đọc ảnh"));
+    };
+    
+    img.src = url;
   });
 }
 
-/* ===== CALL AI ===== */
-async function callAI(base64,mime){
-  const res=await fetch(SCRIPT_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      base64,
-      mimeType:mime,
-      token:SECRET_TOKEN,
-      prompt:`Extract JSON name,dob,passport,gender`
-    })
-  });
+/* ===== GỌI AI THỜI GIAN THỰC ===== */
+async function callAI(base64, mime) {
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        base64,
+        mimeType: mime,
+        token: SECRET_TOKEN,
+        // Ép AI phản hồi định dạng JSON thuần để parse nhanh hơn
+        prompt: `Extract data and return ONLY a valid JSON object with keys: name, dob, passport, gender. Do not include markdown formatting.`
+      })
+    });
 
-  const json=await res.json();
-  const text=json.candidates?.[0]?.content?.parts?.[0]?.text||"";
-
-  try{
-    return JSON.parse(text.replace(/```/g,""));
-  }catch(e){
+    if (!res.ok) return null;
+    const json = await res.json();
+    let text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    
+    // Tách JSON bằng Regex phòng trường hợp AI tự thêm cụm ```json
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+    return null;
+  } catch (e) {
+    console.error("Lỗi gọi AI hoặc Parse JSON:", e);
     return null;
   }
 }
 
-/* ===== HANDLE ===== */
-async function handle(file,type){
+/* ===== XỬ LÝ CHÍNH ĐA LUỒNG ===== */
+async function handle(file, type) {
+  if (!file) return;
 
-  const img=document.getElementById(type==="a"?"imgA":"imgB");
-  const st=document.getElementById(type==="a"?"stA":"stB");
+  const isA = type === "a";
+  const imgEl = document.getElementById(isA ? "imgA" : "imgB");
+  const stEl = document.getElementById(isA ? "stA" : "stB");
 
-  img.src=URL.createObjectURL(file);
-  st.innerHTML="⏳ đang xử lý...";
+  // Hiển thị ảnh ngay lập tức để tạo cảm giác mượt mà (UI/UX phản hồi nhanh)
+  const previewUrl = URL.createObjectURL(file);
+  imgEl.src = previewUrl;
+  stEl.innerHTML = "⏳ đang xử lý...";
+  
+  // Reset data cũ của bên đang chụp
+  state[type] = null;
+  renderWaiting();
 
-  const base64=await resize(file);
-  const data=await callAI(base64,file.type);
+  try {
+    // Chạy đồng thời việc nén ảnh và upload
+    const base64 = await resize(file);
+    const data = await callAI(base64, file.type);
 
-  if(!data){
-    st.innerHTML="<span class='warn'>⚠ lỗi đọc</span>";
-    return;
+    if (!data) {
+      stEl.innerHTML = "<span class='warn'>⚠ lỗi đọc dữ liệu</span>";
+      return;
+    }
+
+    stEl.innerHTML = "<span class='ok'>✔ done</span>";
+    state[type] = data;
+
+    // Nếu cả 2 bên đã có dữ liệu -> Tiến hành so sánh ngay
+    if (state.a && state.b) {
+      renderResult();
+    }
+  } catch (err) {
+    stEl.innerHTML = "<span class='bad'>❌ Lỗi hệ thống</span>";
   }
-
-  st.innerHTML="<span class='ok'>✔ done</span>";
-
-  if(type==="a"){A=data;doneA=true;}
-  else {B=data;doneB=true;}
-
-  if(doneA&&doneB) render();
 }
 
-fileA.onchange=e=>handle(e.target.files[0],"a");
-fileB.onchange=e=>handle(e.target.files[0],"b");
+// Lắng nghe sự kiện đổi file
+document.getElementById("fileA").onchange = e => handle(e.target.files[0], "a");
+document.getElementById("fileB").onchange = e => handle(e.target.files[0], "b");
 
-/* ===== COMPARE ===== */
-function same(a,b){
-  return (a||"").toString().trim().toLowerCase()===
-         (b||"").toString().trim().toLowerCase();
+/* ===== CHUẨN HÓA DỮ LIỆU ĐỂ SO SÁNH ===== */
+function cleanStr(str) {
+  return (str || "").toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function render(){
+function same(a, b) {
+  return cleanStr(a) === cleanStr(b);
+}
 
-  const fields=[
-    ["NAME","name"],
-    ["DOB","dob"],
-    ["PASSPORT","passport"],
-    ["GENDER","gender"]
+/* ===== GIAO DIỆN CHỜ ===== */
+function renderWaiting() {
+  document.getElementById("out").innerHTML = `⏳ Đang xử lý và đối sánh dữ liệu...`;
+}
+
+/* ===== XUẤT KẾT QUẢ ===== */
+function renderResult() {
+  const fields = [
+    ["NAME", "name"],
+    ["DOB", "dob"],
+    ["PASSPORT", "passport"],
+    ["GENDER", "gender"]
   ];
 
-  let html="";
+  let html = "";
+  let pass = true;
 
-  let pass=true;
+  fields.forEach(f => {
+    const valA = state.a[f[1]] || "-";
+    const valB = state.b[f[1]] || "-";
+    const ok = same(valA, valB);
+    
+    if (!ok) pass = false;
 
-  fields.forEach(f=>{
-    const ok=same(A[f[1]],B[f[1]]);
-    if(!ok) pass=false;
-
-    html+=`
+    html += `
     <div class="row">
       <div class="label">${f[0]}</div>
-      <div class="${ok?'good':'badc'}">${A[f[1]]||"-"}</div>
-      <div class="${ok?'good':'badc'}">${B[f[1]]||"-"}</div>
+      <div class="${ok ? 'good' : 'badc'}">${valA}</div>
+      <div class="${ok ? 'good' : 'badc'}">${valB}</div>
     </div>`;
   });
 
-  html+=`
-  <div class="big ${pass?'good':'badc'}">
-    ${pass?"PASS 🟢":"FAIL 🔴"}
+  html += `
+  <div class="big ${pass ? 'good' : 'badc'}">
+    ${pass ? "PASS 🟢" : "FAIL 🔴"}
   </div>`;
 
-  document.getElementById("out").innerHTML=html;
+  document.getElementById("out").innerHTML = html;
 }
 </script>
 
