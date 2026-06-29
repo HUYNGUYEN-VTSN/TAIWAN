@@ -759,7 +759,7 @@ async function extractFields(base64, mimeType) {
   "dob": "ngày sinh, định dạng DD/MM/YYYY",
   "passport": "số hộ chiếu (passport number), viết hoa không khoảng trắng",
   "gender": "M hoặc F (Male/Female, Nam/Nữ quy về M/F)",
-  "usaVisaNumber": "số visa Mỹ (US visa number/foil number). Nếu ảnh là giấy Travel Authorization Certificate có dòng 'Holding a Vietnam passport with USA visa: XXXXXXX' thì lấy đúng số XXXXXXX đó. Nếu ảnh là visa Mỹ thật thì lấy số visa in trên visa (thường là chữ+số, ví dụ M1875390). Nếu giấy tờ không liên quan tới visa Mỹ và không có số này thì để null.",
+  "usaVisaNumber": "số visa Mỹ (US visa number/foil number), thường gồm 1 chữ cái + 7 chữ số (ví dụ N2047039, M1875390). QUAN TRỌNG: trên giấy 'Travel Authorization Certificate' của Đài Loan, dòng nhãn 'Holding a Vietnam passport with USA visa:' thường KHÔNG có số ngay sau dấu hai chấm trên cùng dòng — số đó thường nằm RIÊNG Ở MỘT VỊ TRÍ KHÁC trong khung, thường là góc dưới bên phải của khung chứng nhận, có thể nằm đè lên hoặc gần con dấu tròn lớn của cơ quan cấp giấy, đôi khi cách xa dòng nhãn vài dòng. Phải quét kỹ toàn bộ khung giấy tờ (đặc biệt vùng giữa và góc dưới phải) để tìm đúng số này, không chỉ nhìn ngay sau dấu hai chấm. Nếu ảnh là visa Mỹ thật (không phải giấy của Đài Loan) thì lấy số visa in trực tiếp trên visa đó. Nếu giấy tờ không liên quan tới visa Mỹ và không tìm thấy số này thì để null.",
   "cancelled": "true nếu trên giấy tờ có in/đóng dấu/viết tay chữ CANCEL, CANCELED, CANCELLED, VOID, ANNULÉ hoặc dấu hiệu huỷ visa tương đương ở bất kỳ đâu trên ảnh; false nếu không thấy"
 }
 
