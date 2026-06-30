@@ -654,7 +654,14 @@ async function extractFields(base64, mimeType) {
 // =====================================================================
 function ImageSlot({ title, onSelect, status, previewUrl }) {
   const fileInputRef = React.useRef(null);
+   
+const openGallery = () => {
+  fileInputRef.current?.click();
+};
 
+const openCamera = () => {
+  fileInputRef.camera?.click();
+};
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) onSelect(file);
@@ -755,14 +762,33 @@ function ImageSlot({ title, onSelect, status, previewUrl }) {
       </div>
 
       {/* HIDDEN INPUT */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        style={{ display: "none" }}
-        onChange={handleChange}
-      />
-    </div>
+      <div style={{ display: "none" }}>
+  <input
+    type="file"
+    ref={fileInputRef}
+    accept="image/*"
+    style={{ display: "none" }}
+    onChange={handleChange}
+  />
+
+  <input
+    type="file"
+    ref={(el) => (fileInputRef.camera = el)}
+    accept="image/*"
+    capture="environment"
+    style={{ display: "none" }}
+    onChange={handleChange}
+  />
+</div>
+       
+<div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+  <button className="btn" onClick={openGallery} style={{ flex: 1 }}>
+    📁 Upload File
+  </button>
+  <button className="btn" onClick={openCamera} style={{ flex: 1 }}>
+    📷 Take Photo
+  </button>
+</div>
   );
 }
   
@@ -850,12 +876,7 @@ function App() {
 
   const handleSelectA = (file) => processFile(file, setSlotA);
   const handleSelectB = (file) => processFile(file, setSlotB);
-
-  const reset = () => {
-    setSlotA({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
-    setSlotB({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
-  };
-
+   
   // Tự động đối chiếu thông tin khi cả 2 bên đều có kết quả từ AI
   const renderCompare = () => {
     if (slotA.status.type === "warn" || slotB.status.type === "warn") {
@@ -1011,24 +1032,6 @@ return (
         </div>
         {renderCompare()}
     </div>
-    {
-    (slotA.file || slotB.file)
-    &&
-    <div
-        style={{
-            display:"flex",
-            justifyContent:"center",
-            marginTop:35
-        }}
-    >
-        <button
-            className="btn-reset"
-            onClick={reset}
-        >
-            🔄 Start New Verification
-        </button>
-    </div>
-    }
     <div
         style={{
             marginTop:50,
