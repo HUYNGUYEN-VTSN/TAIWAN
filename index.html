@@ -654,25 +654,136 @@ async function extractFields(base64, mimeType) {
 // =====================================================================
 function ImageSlot({ title, onSelect, status, previewUrl }) {
   const fileInputRef = useRef(null);
-
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) onSelect(file);
   };
-
+  const isReady = status.type === "ok";
+  const isLoading = status.type === "warn";
+  const isError = status.type === "bad";
   return (
     <div className="card">
-      <button className="btn" onClick={() => fileInputRef.current.click()}>📷 {title}</button>
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        accept="image/*" 
-        capture="environment" 
-        style={{ display: "none" }} 
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 18
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700
+            }}
+          >
+            {title}
+          </div>
+          <div
+            style={{
+              color: "#94a3b8",
+              fontSize: 13,
+              marginTop: 4
+            }}
+          >
+            AI Document Scanner
+          </div>
+        </div>
+        <div
+          style={{
+            fontSize: 34
+          }}
+        >
+          {title === "TAC" ? "🪪" : "🛂"}
+        </div>
+      </div>
+      <div
+        style={{
+          border: "2px dashed rgba(255,255,255,.12)",
+          borderRadius: 18,
+          minHeight: 330,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          background: "rgba(255,255,255,.02)"
+        }}
+      >
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={title}
+          />
+        ) : (
+          <div
+            style={{
+              textAlign: "center",
+              padding: 20
+            }}
+          >
+            <div
+              style={{
+                fontSize: 70
+              }}
+            >
+              📄
+            </div>
+            <div
+              style={{
+                marginTop: 15,
+                fontSize: 18,
+                fontWeight: 600
+              }}
+            >
+              Upload Document
+            </div>
+            <div
+              style={{
+                color: "#94a3b8",
+                marginTop: 10,
+                fontSize: 14
+              }}
+            >
+              JPG • PNG • HEIC
+            </div>
+          </div>
+        )}
+      </div>
+      <button
+        className="btn"
+        style={{ marginTop: 18 }}
+        onClick={() => fileInputRef.current.click()}
+      >
+        📷 Upload {title}
+      </button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
         onChange={handleChange}
       />
-      {previewUrl && <img src={previewUrl} alt={title} />}
-      <div className={`status ${status.type || ""}`}>{status.text}</div>
+      <div
+        className={`status ${
+          isReady
+            ? "ok"
+            : isLoading
+            ? "warn"
+            : isError
+            ? "bad"
+            : ""
+        }`}
+      >
+        {isReady && "✅ AI Read Successfully"}
+
+        {isLoading && "⚡ AI is Reading Document..."}
+
+        {isError && status.text}
+
+        {!isReady && !isLoading && !isError && "Waiting for upload"}
+      </div>
     </div>
   );
 }
