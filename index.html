@@ -653,137 +653,115 @@ async function extractFields(base64, mimeType) {
 // COMPONENT RENDER 
 // =====================================================================
 function ImageSlot({ title, onSelect, status, previewUrl }) {
-  const fileInputRef = useRef(null);
+  const fileInputRef = React.useRef(null);
+
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) onSelect(file);
   };
+
+  const triggerUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   const isReady = status.type === "ok";
   const isLoading = status.type === "warn";
   const isError = status.type === "bad";
+
   return (
-    <div className="card">
+    <div
+      className="card"
+      onClick={triggerUpload}
+      style={{
+        cursor: "pointer",
+        position: "relative",
+        overflow: "hidden"
+      }}
+    >
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 18
+          marginBottom: 14
         }}
       >
         <div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 700
-            }}
-          >
-            {title}
+          <div style={{ fontSize: 20, fontWeight: 700 }}>
+            {title === "TAC" ? "🪪 TAC Document" : "🛂 VISA Document"}
           </div>
-          <div
-            style={{
-              color: "#94a3b8",
-              fontSize: 13,
-              marginTop: 4
-            }}
-          >
-            AI Document Scanner
+          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+            Click anywhere to upload or replace image
           </div>
         </div>
-        <div
-          style={{
-            fontSize: 34
-          }}
-        >
-          {title === "TAC" ? "🪪" : "🛂"}
+        <div style={{ fontSize: 28, opacity: 0.9 }}>
+          {title === "TAC" ? "🇹🇼" : "🌍"}
         </div>
       </div>
+      {/* BODY */}
       <div
         style={{
-          border: "2px dashed rgba(255,255,255,.12)",
+          border: "2px dashed rgba(255,255,255,.15)",
           borderRadius: 18,
-          minHeight: 330,
+          minHeight: 320,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
-          background: "rgba(255,255,255,.02)"
+          background: previewUrl
+            ? "rgba(255,255,255,0.02)"
+            : "rgba(255,255,255,0.01)",
+          transition: "0.2s ease"
         }}
       >
         {previewUrl ? (
           <img
             src={previewUrl}
             alt={title}
+            style={{
+              width: "100%",
+              height: "320px",
+              objectFit: "contain",
+              borderRadius: 14
+            }}
+            onClick={triggerUpload}
           />
         ) : (
-          <div
-            style={{
-              textAlign: "center",
-              padding: 20
-            }}
-          >
-            <div
-              style={{
-                fontSize: 70
-              }}
-            >
-              📄
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 60 }}>📄</div>
+
+            <div style={{ marginTop: 10, fontWeight: 600 }}>
+              Drop or Click to Upload
             </div>
-            <div
-              style={{
-                marginTop: 15,
-                fontSize: 18,
-                fontWeight: 600
-              }}
-            >
-              Upload Document
-            </div>
-            <div
-              style={{
-                color: "#94a3b8",
-                marginTop: 10,
-                fontSize: 14
-              }}
-            >
-              JPG • PNG • HEIC
+
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
+              JPG • PNG • HEIC supported
             </div>
           </div>
         )}
       </div>
-      <button
-        className="btn"
-        style={{ marginTop: 18 }}
-        onClick={() => fileInputRef.current.click()}
+
+      {/* STATUS */}
+      <div
+        className={`status ${
+          isReady ? "ok" : isLoading ? "warn" : isError ? "bad" : ""
+        }`}
+        style={{ marginTop: 14 }}
       >
-        📷 Upload {title}
-      </button>
+        {isReady && "✅ Ready"}
+        {isLoading && "⚡ Processing..."}
+        {isError && status.text}
+        {!isReady && !isLoading && !isError && "Waiting for upload"}
+      </div>
+
+      {/* HIDDEN INPUT */}
       <input
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         style={{ display: "none" }}
         onChange={handleChange}
       />
-      <div
-        className={`status ${
-          isReady
-            ? "ok"
-            : isLoading
-            ? "warn"
-            : isError
-            ? "bad"
-            : ""
-        }`}
-      >
-        {isReady && "✅ AI Read Successfully"}
-
-        {isLoading && "⚡ AI is Reading Document..."}
-
-        {isError && status.text}
-
-        {!isReady && !isLoading && !isError && "Waiting for upload"}
-      </div>
     </div>
   );
 }
