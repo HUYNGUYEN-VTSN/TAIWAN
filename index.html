@@ -936,26 +936,133 @@ function App() {
     );
   };
 
-  return (
-    <div className="wrap">
-      <h1>VISA MATCH PRO</h1>
-      <div className="sub">TAC • VISA • REALTIME CHECK</div>
-
-      <div className="grid">
-        <ImageSlot title="TAC" onSelect={handleSelectA} status={slotA.status} previewUrl={slotA.preview} />
-        <ImageSlot title="VISA" onSelect={handleSelectB} status={slotB.status} previewUrl={slotB.preview} />
-      </div>
-
-      <div className="compare">
-        {renderCompare()}
-      </div>
-
-      {(slotA.file || slotB.file) && (
-        <button className="btn-reset" onClick={reset}>⟲ Làm lại</button>
-      )}
+return (
+<div className="wrap">
+    <div className="header">
+        <div className="logo">
+            🛂
+        </div>
+        <h1>
+            VISA MATCH PRO
+        </h1>
+        <div className="sub">
+            AI Powered Document Verification
+        </div>
+        <div
+            style={{
+                marginTop:15,
+                color:"#64748b",
+                fontSize:14
+            }}
+        >
+            Secure • Accurate • Fast
+        </div>
     </div>
-  );
-}
+    <div className="grid">
+        <ImageSlot
+            title="TAC"
+            onSelect={handleSelectA}
+            status={slotA.status}
+            previewUrl={slotA.preview}
+        />
+        <ImageSlot
+            title="VISA"
+            onSelect={handleSelectB}
+            status={slotB.status}
+            previewUrl={slotB.preview}
+        />
+    </div>
+    <div
+        style={{
+            height:40
+        }}
+    />
+    <div className="compare">
+        <div
+            style={{
+                display:"flex",
+                justifyContent:"space-between",
+                alignItems:"center",
+                marginBottom:25
+            }}
+        >
+            <div>
+                <div
+                    style={{
+                        fontSize:24,
+                        fontWeight:700
+                    }}
+                >
+                    📊 Compare Result
+                </div>
+                <div
+                    style={{
+                        color:"#94a3b8",
+                        marginTop:6
+                    }}
+                >
+                    AI Verification Summary
+                </div>
+            </div>
+            {
+            slotA.data && slotB.data ?
+            <div
+                style={{
+                    background:"#1e293b",
+                    padding:"10px 18px",
+                    borderRadius:12,
+                    color:"#60a5fa",
+                    fontWeight:600
+                }}
+            >
+                Ready
+            </div>
+            :
+            <div
+                style={{
+                    background:"#3b1f1f",
+                    padding:"10px 18px",
+                    borderRadius:12,
+                    color:"#fca5a5",
+                    fontWeight:600
+                }}
+            >
+                Waiting...
+            </div>
+            }
+        </div>
+        {renderCompare()}
+    </div>
+    {
+    (slotA.file || slotB.file)
+    &&
+    <div
+        style={{
+            display:"flex",
+            justifyContent:"center",
+            marginTop:35
+        }}
+    >
+        <button
+            className="btn-reset"
+            onClick={reset}
+        >
+            🔄 Start New Verification
+        </button>
+    </div>
+    }
+    <div
+        style={{
+            marginTop:50,
+            textAlign:"center",
+            color:"#64748b",
+            fontSize:13
+        }}
+    >
+        Powered by Gemini AI • OCR Engine • Realtime Verification
+    </div>
+</div>
+);
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
