@@ -157,11 +157,6 @@ const FIELD_LABELS = {
   gender: "Giới tính"
 };
 
-function normalizeForCompare(value) {
-  if (!value) return "";
-  return value.toString().trim().toUpperCase().replace(/\s+/g, " ");
-}
-
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -348,39 +343,24 @@ function ImageSlot({ title, onSelect, status, previewUrl }) {
   );
 }
   
-// 1. Hàm xóa dấu tiếng Việt (Dùng cho so sánh Tên)
+// 1. Hàm xóa dấu tiếng Việt tối ưu hóa bằng Unicode Decomposition loại bỏ lỗi Font rời rạc
 function removeVietnameseTones(str) {
   if (!str) return "";
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|á|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  str = str.replace(/đ/g, "d");
-  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-  str = str.replace(/Đ/g, "D");
-  // Thừa dấu thanh do gõ chữ Telex
-  str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, ""); 
-  str = str.replace(/\u02C6|\u0306|\u031B/g, ""); 
-  return str;
+  return str
+    .normalize("NFD") // Tách các ký tự dấu phụ ra khỏi chữ gốc
+    .replace(/[\u0300-\u036f]/g, "") // Xóa sạch toàn bộ dải ký tự dấu phụ vừa tách
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
 }
 
 // 2. Hàm chuẩn hóa Ngày sinh (DOB) về một dạng chung duy nhất là YYYYMMDD
 function normalizeDOB(dobStr) {
   if (!dobStr) return "";
-  let s = dobStr.toString().trim().toUpperCase().replace(/[\/\-\s]/g, ""); // Xóa gạch chéo, gạch ngang, khoảng trắng
+  let s = dobStr.toString().trim().toUpperCase().replace(/[\/\-\s\.]/g, ""); // Thêm dấu chấm vào bộ lọc xóa ký tự phân cách
 
   // Trường hợp 1: Dạng chuẩn 8 chữ số nguyên bản (VD: 19890119 hoặc 19011989)
   if (/^\d{8}$/.test(s)) {
-    // Nếu 4 chữ số đầu là năm (lớn hơn 1900), định dạng là YYYYMMDD
     if (parseInt(s.substring(0, 4)) > 1900) return s;
-    // Ngược lại nếu là DDMMYYYY -> Đảo về YYYYMMDD
     return s.substring(4, 8) + s.substring(2, 4) + s.substring(0, 2);
   }
 
@@ -392,45 +372,43 @@ function normalizeDOB(dobStr) {
     let month = months[matchEnglish[2]] || "00";
     let year = matchEnglish[3];
     if (year.length === 2) {
-      // Nếu năm có 2 chữ số (VD: 89), tự động đoán thế kỷ (nếu > 30 là năm 19xx, nhỏ hơn là 20xx)
       year = (parseInt(year) > 30 ? "19" : "20") + year;
     }
     return year + month + day;
   }
 
-  return s; // Nếu không khớp mẫu nào thì trả về chuỗi gốc đã xóa ký tự đặc biệt
+  return s;
 }
 
-// 3. Hàm tổng hợp so sánh thông minh theo từng trường dữ liệu (Cập nhật mới)
+// 3. Hàm tổng hợp so sánh thông minh theo từng trường dữ liệu
 function normalizeForCompare(value, fieldType) {
   if (!value) return "";
   let s = value.toString().trim().toUpperCase();
 
-  // Xử lý điều kiện 1: TÊN (Bỏ toàn bộ dấu tiếng Việt)
+  // Xử lý điều kiện 1: TÊN (Bỏ dấu, xóa khoảng trắng thừa)
   if (fieldType === "name") {
     return removeVietnameseTones(s).replace(/\s+/g, " ");
   }
 
   // Xử lý điều kiện 2: GIỚI TÍNH (FEMALE/Female/F -> F, MALE/Male/M -> M)
   if (fieldType === "gender") {
-    if (s === "MALE" || s === "M") return "M";
-    if (s === "FEMALE" || s === "F") return "F";
+    if (s === "MALE" || s === "M" || s === "NAM") return "M";
+    if (s === "FEMALE" || s === "F" || s === "NỮ" || s === "NU") return "F";
     return s;
   }
 
-  // Xử lý điều kiện 3: NGÀY SINH (Đồng nhất mọi kiểu viết về YYYYMMDD)
+  // Xử lý điều kiện 3: NGÀY SINH (Đồng nhất về YYYYMMDD)
   if (fieldType === "dob") {
     return normalizeDOB(s);
   }
 
-  // Các trường khác (Hộ chiếu, số Visa...) giữ nguyên logic cơ bản
-  return s.replace(/\s+/g, " ");
+  // Các trường khác (Hộ chiếu): Xóa dấu cách, gạch ngang, giữ nguyên ký tự chính
+  return s.replace(/[\s\-\_]/g, "");
 }
   
 function App() {
   const [slotA, setSlotA] = useState({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
   const [slotB, setSlotB] = useState({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
-  const [globalStatus, setGlobalStatus] = useState("Chờ dữ liệu...");
 
   const processFile = async (file, setSlot) => {
     setSlot(prev => ({ ...prev, file, preview: URL.createObjectURL(file), status: { text: "🔄 Đang xử lý ảnh...", type: "warn" }, data: null }));
@@ -451,7 +429,6 @@ function App() {
   const reset = () => {
     setSlotA({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
     setSlotB({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
-    setGlobalStatus("Chờ dữ liệu...");
   };
 
   // Tự động đối chiếu thông tin khi cả 2 bên đều có kết quả từ AI
@@ -468,7 +445,6 @@ function App() {
       const valA = slotA.data[key] || "";
       const valB = slotB.data[key] || "";
       
-      // TRUYỀN THÊM BIẾN 'key' VÀO ĐỂ HÀM BIẾT ĐANG SO SÁNH TÊN, DOB HAY GENDER
       const match = normalizeForCompare(valA, key) === normalizeForCompare(valB, key);
       if (!match) allMatch = false;
 
