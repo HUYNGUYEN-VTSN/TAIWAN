@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8"/>
@@ -63,6 +63,7 @@ h1{
   color:#fff;
   font-weight:600;
   font-size:14px;
+  cursor: pointer;
 }
 
 img{
@@ -119,57 +120,41 @@ img{
   margin-top:10px;
   font-weight:800;
 }
+
+.btn-reset {
+  display: block;
+  margin: 15px auto 0;
+  padding: 10px 20px;
+  background: #22304f;
+  color: #fff;
+  border: 1px solid #364973;
+  border-radius: 6px;
+  cursor: pointer;
+}
 </style>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 </head>
 
 <body>
-<div class="wrap">
-
-<h1>VISA MATCH PRO</h1>
-<div class="sub">TAC • VISA • REALTIME CHECK</div>
-
-<div class="grid">
-
-  <div class="card">
-    <button class="btn" onclick="document.getElementById('fileA').click()">📷 TAC</button>
-    <input type="file" id="fileA" accept="image/*" capture="environment" style="display:none;">
-    <img id="imgA">
-    <div id="stA" class="status">Chưa xử lý</div>
-  </div>
-
-  <div class="card">
-    <button class="btn" onclick="document.getElementById('fileB').click()">📷 VISA</button>
-    <input type="file" id="fileB" accept="image/*" capture="environment" style="display:none;">
-    <img id="imgB">
-    <div id="stB" class="status">Chưa xử lý</div>
-  </div>
-
-</div>
-
-<div class="compare" id="out">
-  ⏳ Chờ dữ liệu...
-</div>
-
-</div>
+<div id="root"></div>
 
 <script type="text/babel" data-presets="react">
-
-const { useState, useRef } = React;
+const { useState, useRef, useEffect } = React;
 
 // =====================================================================
 // CẤU HÌNH PROXY
 // =====================================================================
 const PROXY_URL = "https://script.google.com/macros/s/AKfycbwiimbbALuE7X_a1mHKo9EPpb-SFGwB9oBFnCAwPM9HiVW5ZXInA_8lrhZZr5hll_P4/exec";
-
-// Dùng bản flash-lite để có tốc độ phản hồi tối đa (giảm thêm 30-40% time chờ so với flash thường)
 const GEMINI_MODEL = "gemini-2.5-flash-lite"; 
 
 const FIELD_LABELS = {
   name: "Họ tên",
   dob: "Ngày sinh",
   passport: "Số hộ chiếu",
-  gender: "Giới tính",
-  usaVisaNumber: "Số Visa Mỹ",
+  gender: "Giới tính"
 };
 
 function normalizeForCompare(value) {
@@ -253,7 +238,7 @@ async function resizeImageToBase64(file, maxDimension) {
         }
 
         ctx.drawImage(img, 0, 0, drawW, drawH);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85); // Giảm nhẹ chất lượng xuống 0.85 để file nhẹ hơn nữa
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
         URL.revokeObjectURL(url);
         resolve({ base64: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       } catch (e) { URL.revokeObjectURL(url); reject(e); }
@@ -263,7 +248,6 @@ async function resizeImageToBase64(file, maxDimension) {
   });
 }
 
-// HẠ XUỐNG 1200: Bước nhảy vọt về tốc độ xử lý và upload truyền qua mạng
 const MAX_UPLOAD_DIMENSION = 1200; 
 
 async function prepareImageForUpload(file) {
@@ -301,7 +285,6 @@ async function callProxyOnce(base64, mimeType, prompt) {
 
 async function extractFields(base64, mimeType) {
   const prompt = `Phân tích ảnh giấy tờ tùy thân (TAC Đài Loan hoặc Visa). Trích xuất chính xác cấu trúc JSON yêu cầu.`;
-
   const MAX_RETRIES = 2;
   const RETRY_DELAY_MS = 2000;
   let lastErr = null;
@@ -311,13 +294,11 @@ async function extractFields(base64, mimeType) {
       const data = await callProxyOnce(base64, mimeType, prompt);
       let text = "";
       
-      // Khớp cấu trúc dữ liệu trả về từ GAS
       if (data && data.candidates && data.candidates[0]?.content?.parts) {
         text = data.candidates[0].content.parts.map(p => p.text || "").join("");
       } else if (typeof data === "string") {
         text = data;
       } else if (data && typeof data === "object") {
-        // Nếu GAS trả trực tiếp object đã được parse
         if(data.name !== undefined) return data;
       }
 
@@ -328,9 +309,7 @@ async function extractFields(base64, mimeType) {
         cleaned = cleaned.slice(firstBrace, lastBrace + 1);
       }
 
-      const parsed = JSON.parse(cleaned);
-      parsed.cancelled = parsed.cancelled === true || String(parsed.cancelled).toLowerCase() === "true";
-      return parsed;
+      return JSON.parse(cleaned);
     } catch (err) {
       lastErr = err;
       const isTransient = err.status === 429 || err.status === 503 || /429|quota|overloaded/i.test(err.message || "");
@@ -342,17 +321,123 @@ async function extractFields(base64, mimeType) {
 }
 
 // =====================================================================
-// GIỮ NGUYÊN PHẦN RENDER COMPONENT (ImageSlot và App) PHÍA DƯỚI CỦA BẠN
+// COMPONENT RENDER (SỬ DỤNG HOÀN TOÀN TRONG REACT STATE)
 // =====================================================================
-function ImageSlot({ title, subtitle, image, onSelect, status }) {
-// ... Giữ nguyên toàn bộ code ImageSlot cũ của bạn ...
+function ImageSlot({ title, onSelect, status, previewUrl }) {
+  const fileInputRef = useRef(null);
+
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+    if (file) onSelect(file);
+  };
+
+  return (
+    <div className="card">
+      <button className="btn" onClick={() => fileInputRef.current.click()}>📷 {title}</button>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        accept="image/*" 
+        capture="environment" 
+        style={{ display: "none" }} 
+        onChange={handleChange}
+      />
+      {previewUrl && <img src={previewUrl} alt={title} />}
+      <div className={`status ${status.type || ""}`}>{status.text}</div>
+    </div>
+  );
 }
+
 function App() {
-// ... Giữ nguyên toàn bộ code App cũ của bạn ...
+  const [slotA, setSlotA] = useState({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
+  const [slotB, setSlotB] = useState({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
+  const [globalStatus, setGlobalStatus] = useState("Chờ dữ liệu...");
+
+  const processFile = async (file, setSlot) => {
+    setSlot(prev => ({ ...prev, file, preview: URL.createObjectURL(file), status: { text: "🔄 Đang xử lý ảnh...", type: "warn" }, data: null }));
+    try {
+      const prepared = await prepareImageForUpload(file);
+      setSlot(prev => ({ ...prev, status: { text: "⚡ Đang gửi AI đọc...", type: "warn" } }));
+      
+      const result = await extractFields(prepared.base64, prepared.mimeType);
+      setSlot(prev => ({ ...prev, status: { text: "✅ Đọc thành công", type: "ok" }, data: result }));
+    } catch (err) {
+      setSlot(prev => ({ ...prev, status: { text: `❌ Lỗi: ${err.message}`, type: "bad" }, data: null }));
+    }
+  };
+
+  const handleSelectA = (file) => processFile(file, setSlotA);
+  const handleSelectB = (file) => processFile(file, setSlotB);
+
+  const reset = () => {
+    setSlotA({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
+    setSlotB({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
+    setGlobalStatus("Chờ dữ liệu...");
+  };
+
+  // Tự động đối chiếu thông tin khi cả 2 bên đều có kết quả từ AI
+  const renderCompare = () => {
+    if (slotA.status.type === "warn" || slotB.status.type === "warn") {
+      return <div>⏳ Hệ thống đang đọc và xử lý thông tin...</div>;
+    }
+    if (!slotA.data || !slotB.data) {
+      return <div>⏳ Chờ đủ dữ liệu từ cả 2 ảnh TAC và VISA...</div>;
+    }
+
+    let allMatch = true;
+    const rows = Object.keys(FIELD_LABELS).map(key => {
+      const valA = slotA.data[key] || "";
+      const valB = slotB.data[key] || "";
+      const match = normalizeForCompare(valA) === normalizeForCompare(valB);
+      if (!match) allMatch = false;
+
+      return (
+        <div className="row" key={key}>
+          <div className="label">{FIELD_LABELS[key]}</div>
+          <div className={match ? "good" : "badc"}>{valA || "N/A"}</div>
+          <div className={match ? "good" : "badc"}>{valB || "N/A"}</div>
+        </div>
+      );
+    });
+
+    return (
+      <div>
+        <div className="row" style={{ fontWeight: "bold", borderBottom: "2px solid #22304f" }}>
+          <div className="label">Trường thông tin</div>
+          <div>Dữ liệu TAC</div>
+          <div>Dữ liệu VISA</div>
+        </div>
+        {rows}
+        <div className={`big ${allMatch ? "good" : "badc"}`}>
+          {allMatch ? "✓ HỢP LỆ (KHỚP DỮ LIỆU)" : "✕ KHÔNG HỢP LỆ (LỆCH DỮ LIỆU)"}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="wrap">
+      <h1>VISA MATCH PRO</h1>
+      <div className="sub">TAC • VISA • REALTIME CHECK</div>
+
+      <div className="grid">
+        <ImageSlot title="TAC" onSelect={handleSelectA} status={slotA.status} previewUrl={slotA.preview} />
+        <ImageSlot title="VISA" onSelect={handleSelectB} status={slotB.status} previewUrl={slotB.preview} />
+      </div>
+
+      <div className="compare">
+        {renderCompare()}
+      </div>
+
+      {(slotA.file || slotB.file) && (
+        <button className="btn-reset" onClick={reset}>⟲ Làm lại</button>
+      )}
+    </div>
+  );
 }
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
 </script>
-
 </body>
 </html>
