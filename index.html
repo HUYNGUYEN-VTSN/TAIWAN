@@ -307,7 +307,15 @@ async function callProxyOnce(base64, mimeType, prompt) {
 }
 
 async function extractFields(base64, mimeType) {
-  const prompt = `Phân tích ảnh giấy tờ tùy thân (TAC Đài Loan hoặc Visa). Trích xuất chính xác cấu trúc JSON yêu cầu.`;
+  // SỬA LỖI: Trả lại Prompt chi tiết để ép AI xuất đúng định dạng JSON thuộc tính
+  const prompt = `Đây là ảnh giấy tờ tùy thân (TAC Đài Loan hoặc Visa). Đọc kỹ ảnh và trích xuất chính xác thông tin sau ở dạng JSON object thuần, KHÔNG kèm mã markdown code block, KHÔNG thêm bớt bất kỳ chữ nào ngoài JSON:
+{
+  "name": "họ tên đầy đủ, viết hoa",
+  "dob": "ngày sinh định dạng DD/MM/YYYY hoặc chuỗi gốc nếu mờ",
+  "passport": "số hộ chiếu, viết liền viết hoa không khoảng trắng",
+  "gender": "M hoặc F (Male/Female quy về M/F)"
+}`;
+
   const MAX_RETRIES = 2;
   const RETRY_DELAY_MS = 2000;
   let lastErr = null;
@@ -377,13 +385,15 @@ function removeVietnameseTones(str) {
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
   str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
   str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|á|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+  // SỬA LỖI: Xoá chữ "á" bị lẫn trong hàng chữ u thường
+  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
   str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
   str = str.replace(/đ/g, "d");
   str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
   str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
   str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
   str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+  // SỬA LỖI: Sửa chữ "Ù" bị trùng lắp lặp lại thành chữ "Ú" ở dải chữ U hoa
   str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
   str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
   str = str.replace(/Đ/g, "D");
