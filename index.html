@@ -6,158 +6,456 @@
 <title>VISA MATCH PRO</title>
 
 <style>
+/* ===========================
+   GOOGLE FONT
+=========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+
+--bg:#07121f;
+
+--card:rgba(255,255,255,.06);
+
+--border:rgba(255,255,255,.08);
+
+--blue:#3b82f6;
+
+--green:#22c55e;
+
+--red:#ef4444;
+
+--yellow:#f59e0b;
+
+--text:#f8fafc;
+
+--muted:#94a3b8;
+
+--shadow:0 20px 45px rgba(0,0,0,.35);
+
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
 body{
-  margin:0;
-  font-family:system-ui;
-  background:#0b1220;
-  color:#e8eefc;
+
+font-family:'Inter',sans-serif;
+
+background:
+linear-gradient(
+135deg,
+#07121f 0%,
+#0b1729 40%,
+#101d35 100%
+);
+
+color:var(--text);
+
+min-height:100vh;
+
 }
 
 .wrap{
-  max-width:1100px;
-  margin:auto;
-  padding:12px;
+
+max-width:1280px;
+
+margin:auto;
+
+padding:40px 24px;
+
+}
+
+/* ===========================
+HEADER
+=========================== */
+
+.header{
+
+text-align:center;
+
+margin-bottom:35px;
+
+}
+
+.logo{
+
+font-size:54px;
+
+margin-bottom:10px;
+
 }
 
 h1{
-  text-align:center;
-  color:#4da3ff;
-  margin:10px 0 0;
-  font-size:20px;
+
+font-size:34px;
+
+font-weight:700;
+
+letter-spacing:1px;
+
+margin-bottom:10px;
+
 }
 
 .sub{
-  text-align:center;
-  font-size:12px;
-  opacity:.7;
-  margin-bottom:10px;
+
+font-size:15px;
+
+color:var(--muted);
+
+letter-spacing:.5px;
+
 }
 
-/* ===== HORIZONTAL LAYOUT ===== */
+/* ===========================
+GRID
+=========================== */
+
 .grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:25px;
+
+margin-top:30px;
+
 }
 
-/* MOBILE */
-@media(max-width:768px){
-  .grid{
-    grid-template-columns:1fr;
-  }
+@media(max-width:900px){
+
+.grid{
+
+grid-template-columns:1fr;
+
 }
+
+}
+
+/* ===========================
+CARD
+=========================== */
 
 .card{
-  background:#111a2e;
-  border:1px solid #22304f;
-  border-radius:12px;
-  padding:10px;
+
+background:var(--card);
+
+backdrop-filter:blur(18px);
+
+border:1px solid var(--border);
+
+border-radius:24px;
+
+padding:22px;
+
+box-shadow:var(--shadow);
+
+transition:.35s;
+
 }
+
+.card:hover{
+
+transform:translateY(-6px);
+
+border-color:#3b82f6;
+
+}
+
+/* ===========================
+UPLOAD BUTTON
+=========================== */
 
 .btn{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:10px;
-  background:#1f6fff;
-  color:#fff;
-  font-weight:600;
-  font-size:14px;
-  cursor: pointer;
+
+width:100%;
+
+padding:16px;
+
+border:none;
+
+border-radius:16px;
+
+background:linear-gradient(
+135deg,
+#3b82f6,
+#2563eb
+);
+
+font-size:16px;
+
+font-weight:600;
+
+color:white;
+
+cursor:pointer;
+
+transition:.3s;
+
 }
+
+.btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:0 15px 30px rgba(37,99,235,.45);
+
+}
+
+/* ===========================
+IMAGE
+=========================== */
 
 img{
-  width:100%;
-  border-radius:10px;
-  margin-top:8px;
-  max-height:240px;
-  object-fit:contain;
-  background:#000;
+
+width:100%;
+
+height:320px;
+
+object-fit:contain;
+
+margin-top:18px;
+
+border-radius:18px;
+
+background:#050a14;
+
+border:1px solid rgba(255,255,255,.08);
+
 }
+
+/* ===========================
+STATUS
+=========================== */
 
 .status{
-  margin-top:8px;
-  font-size:12px;
-  text-align:center;
+
+margin-top:18px;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+font-size:14px;
+
+font-weight:600;
+
+padding:12px;
+
+border-radius:12px;
+
 }
 
-.ok{color:#00e676;font-weight:700}
-.bad{color:#ff5252;font-weight:700}
-.warn{color:#ffb74d;font-weight:700}
+.ok{
+
+background:rgba(34,197,94,.15);
+
+color:#22c55e;
+
+}
+
+.bad{
+
+background:rgba(239,68,68,.15);
+
+color:#ef4444;
+
+}
+
+.warn{
+
+background:rgba(245,158,11,.15);
+
+color:#f59e0b;
+
+}
+
+/* ===========================
+COMPARE
+=========================== */
 
 .compare{
-  margin-top:12px;
-  background:#0f1a33;
-  border:1px solid #22304f;
-  border-radius:12px;
-  padding:10px;
+
+margin-top:35px;
+
+background:var(--card);
+
+backdrop-filter:blur(18px);
+
+border-radius:24px;
+
+padding:25px;
+
+border:1px solid var(--border);
+
+box-shadow:var(--shadow);
+
+overflow:hidden;
+
 }
 
-/* Chia thành 4 cột cố định: Loại giấy tờ (120px), TAC (1fr), Visa (1fr), Icon KQ (45px) */
 .row{
-  display:grid;
-  grid-template-columns:120px 1fr 1fr 45px;
-  gap:6px;
-  padding:8px 0;
-  border-bottom:1px solid #1c2742;
-  font-size:12px;
-  align-items: center;
+
+display:grid;
+
+grid-template-columns:180px 1fr 1fr 70px;
+
+align-items:center;
+
+gap:12px;
+
+padding:15px;
+
+border-bottom:1px solid rgba(255,255,255,.06);
+
+transition:.25s;
+
+}
+
+.row:hover{
+
+background:rgba(255,255,255,.03);
+
 }
 
 .label{
-  color:#8fb3ff;
+
+font-weight:600;
+
+color:#60a5fa;
+
 }
 
 .good{
-  color:#00e676;
+
+color:#22c55e;
+
+font-weight:600;
+
 }
 
 .badc{
-  color:#ff5252;
+
+color:#ef4444;
+
+font-weight:600;
+
 }
 
-/* Cột chứa icon KQ xếp thẳng hàng từ trên xuống */
-.compare-cell.flag {
-  display: flex;
-  justify-content: center;
-  font-size: 14px;
+.compare-cell.flag{
+
+display:flex;
+
+justify-content:center;
+
+font-size:22px;
+
 }
+
+/* ===========================
+RESULT
+=========================== */
 
 .big{
-  font-size:18px;
-  margin-top:15px;
-  font-weight:800;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+
+margin-top:28px;
+
+padding:22px;
+
+border-radius:18px;
+
+display:flex;
+
+align-items:center;
+
+gap:15px;
+
+font-size:20px;
+
+font-weight:700;
+
 }
 
-/* CSS Cho chữ KẾT QUẢ nổi bật ở đầu dòng thông báo */
-.verdict-label-good {
-  background: #e8930a;
-  color: #fff;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 13px;
+.verdict-label-good{
+
+background:#22c55e;
+
+padding:8px 16px;
+
+border-radius:10px;
+
 }
 
-.verdict-label-bad {
-  background: #e0383f;
-  color: #fff;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 13px;
+.verdict-label-bad{
+
+background:#ef4444;
+
+padding:8px 16px;
+
+border-radius:10px;
+
 }
 
-.btn-reset {
-  display: block;
-  margin: 15px auto 0;
-  padding: 10px 20px;
-  background: #22304f;
-  color: #fff;
-  border: 1px solid #364973;
-  border-radius: 6px;
-  cursor: pointer;
+/* ===========================
+RESET
+=========================== */
+
+.btn-reset{
+
+display:block;
+
+margin:35px auto 0;
+
+padding:14px 28px;
+
+border:none;
+
+border-radius:14px;
+
+background:#1e293b;
+
+color:white;
+
+font-size:15px;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.btn-reset:hover{
+
+background:#334155;
+
+transform:translateY(-2px);
+
+}
+
+/* ===========================
+SCROLLBAR
+=========================== */
+
+::-webkit-scrollbar{
+
+width:10px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+background:#334155;
+
+border-radius:20px;
+
 }
 </style>
 
