@@ -317,7 +317,8 @@ body{
 
 .compare-row{
   display:grid;
-  grid-template-columns:140px 1fr 1fr 45px; /* Tăng nhẹ cột cuối để icon đứng rộng rãi thoáng đãng */
+  /* Định hình cột cuối rộng 55px chuyên nghiệp cho việc xếp thẳng hàng icon */
+  grid-template-columns:140px 1fr 1fr 55px;
   border-bottom:1px solid var(--navy-800);
 }
 
@@ -372,9 +373,14 @@ body{
   font-weight:400;
 }
 
+/* Định dạng cột Icon thẳng hàng từ trên xuống */
 .compare-cell.flag{
   justify-content:center;
-  font-size:16px; /* Chỉnh kích thước icon hợp lý */
+  font-size:16px;
+  border-left:1px solid var(--navy-800);
+}
+.compare-row.head .compare-cell.flag {
+  border-left:1px solid rgba(255,255,255,0.25);
 }
 
 .verdict{
@@ -415,29 +421,42 @@ body{
 .verdict.ok .verdict-icon{ background:var(--green); }
 .verdict.no .verdict-icon{ background:var(--red); }
 
+.verdict-text{
+  flex: 1;
+}
+
 .verdict-text h2{
   font-family:'Space Grotesk', sans-serif;
   font-size:18px;
-  margin:0 0 3px;
+  margin:0 0 6px;
   letter-spacing:-0.01em;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-/* Các class đổi màu cho chữ KẾT QUẢ nổi bật lên đầu dòng */
-.verdict-prefix-bad {
-  color: #c91818 !important;
-  background: #fcdad9;
-  padding: 2px 8px;
+/* Định dạng nhãn chữ KẾT QUẢ nổi bật ở đầu dòng */
+.verdict-label {
+  display: inline-block;
+  padding: 2px 10px;
   border-radius: 4px;
-  margin-right: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.verdict.no .verdict-label {
+  background: #e0383f;
+  color: #ffffff;
+}
+.verdict.ok .verdict-label {
+  background: #e8930a;
+  color: #ffffff;
 }
 
-.verdict-prefix-good {
-  color: #b56b00 !important;
-  background: #fef1d6;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-right: 8px;
-}
+/* Màu text đi kèm sau nhãn */
+.verdict.ok .verdict-title-text { color: var(--green); }
+.verdict.no .verdict-title-text { color: var(--red); }
 
 .verdict-text p{
   font-size:12px;
@@ -1035,7 +1054,7 @@ function App() {
                 <div className="compare-cell label">Loại giấy tờ</div>
                 <div className="compare-cell value">TAC</div>
                 <div className="compare-cell value">Visa</div>
-                <div className="compare-cell flag">Status</div> {/* Đổi nhãn tiêu đề cột icon cho rõ ràng */}
+                <div className="compare-cell flag">KQ</div>
               </div>
               {comparisons.map((c) => (
                 <div className="compare-row" key={c.key}>
@@ -1046,7 +1065,7 @@ function App() {
                   <div className={"compare-cell value" + (!c.b ? " empty" : "")}>
                     {c.b || "Không đọc được"}
                   </div>
-                  {/* Chuyển hẳn icon ✅/❌ vào cột cuối cùng riêng biệt giúp xếp thẳng hàng từ trên xuống */}
+                  {/* Thay thế match-dot cũ bằng icon ✅/❌ trực tiếp nằm gọn gàng trong cột riêng */}
                   <div className="compare-cell flag">
                     {c.match ? "✅" : "❌"}
                   </div>
@@ -1059,8 +1078,8 @@ function App() {
                 <div className="verdict-icon">✕</div>
                 <div className="verdict-text">
                   <h2>
-                    <span className="verdict-prefix-bad">KẾT QUẢ:</span>
-                    KHÔNG HỢP LỆ
+                    <span className="verdict-label">KẾT QUẢ:</span>
+                    <span className="verdict-title-text">KHÔNG HỢP LỆ</span>
                   </h2>
                   <p>
                     Lý do: Visa đã bị huỷ (phát hiện dấu CANCEL/CANCELED/CANCELLED trên giấy tờ{" "}
@@ -1073,8 +1092,8 @@ function App() {
                 <div className="verdict-icon">!</div>
                 <div className="verdict-text">
                   <h2>
-                    <span className="verdict-prefix-bad">KẾT QUẢ:</span>
-                    KHÔNG HỢP LỆ
+                    <span className="verdict-label">KẾT QUẢ:</span>
+                    <span className="verdict-title-text">KHÔNG HỢP LỆ</span>
                   </h2>
                   <p>
                     Lý do: thiếu dữ liệu —{" "}
@@ -1091,8 +1110,8 @@ function App() {
                 <div className="verdict-icon">✓</div>
                 <div className="verdict-text">
                   <h2>
-                    <span className="verdict-prefix-good">KẾT QUẢ:</span>
-                    HỢP LỆ — DỮ LIỆU KHỚP
+                    <span className="verdict-label">KẾT QUẢ:</span>
+                    <span className="verdict-title-text">HỢP LỆ — DỮ LIỆU KHỚP</span>
                   </h2>
                   <p>Toàn bộ các trường thông tin khớp giữa hai giấy tờ.</p>
                 </div>
@@ -1102,8 +1121,8 @@ function App() {
                 <div className="verdict-icon">✕</div>
                 <div className="verdict-text">
                   <h2>
-                    <span className="verdict-prefix-bad">KẾT QUẢ:</span>
-                    KHÔNG HỢP LỆ
+                    <span className="verdict-label">KẾT QUẢ:</span>
+                    <span className="verdict-title-text">KHÔNG HỢP LỆ</span>
                   </h2>
                   <p>
                     Lý do:{" "}
