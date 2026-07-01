@@ -692,76 +692,123 @@ function ImageSlot({ title, onSelect, status, previewUrl }) {
         </div>
       </div>
        
-      {/* PREVIEW */}
-      <div
+     {/* PREVIEW */}
+<div
+  onClick={() => galleryRef.current.click()}
+  style={{
+    border: "2px dashed rgba(255,255,255,.15)",
+    borderRadius: 18,
+    minHeight: 320,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "rgba(255,255,255,.02)",
+    cursor: "pointer",
+    padding: 20,
+    transition: ".25s"
+  }}
+>
+  {previewUrl ? (
+    <>
+      <img
+        src={previewUrl}
+        alt={title}
         style={{
-          border: "2px dashed rgba(255,255,255,.15)",
-          borderRadius: 18,
-          minHeight: 320,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "rgba(255,255,255,.02)"
+          width: "100%",
+          height: 230,
+          objectFit: "contain",
+          borderRadius: 14,
+          marginBottom: 20
         }}
-      >
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={title}
-            style={{
-              width: "100%",
-              height: 320,
-              objectFit: "contain",
-              borderRadius: 14
-            }}
-          />
-        ) : (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 60 }}>📄</div>
-            <div
-              style={{
-                marginTop: 10,
-                fontWeight: 600
-              }}
-            >
-              No Image Selected
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "#94a3b8",
-                marginTop: 6
-              }}
-            >
-              JPG • PNG • HEIC
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* BUTTONS */}
+      />
       <div
         style={{
           display: "flex",
           gap: 12,
-          marginTop: 16
+          width: "100%"
         }}
       >
         <button
           className="btn"
           style={{ flex: 1 }}
-          onClick={() => galleryRef.current.click()}
+          onClick={(e) => {
+            e.stopPropagation();
+            galleryRef.current.click();
+          }}
         >
-          📂 Choose Image
+          📂 Replace
         </button>
         <button
           className="btn"
           style={{ flex: 1 }}
-          onClick={() => cameraRef.current.click()}
+          onClick={(e) => {
+            e.stopPropagation();
+            cameraRef.current.click();
+          }}
         >
           📷 Camera
         </button>
       </div>
+    </>
+  ) : (
+    <>
+      <div style={{ fontSize: 70 }}>
+        📄
+      </div>
+      <div
+        style={{
+          fontSize: 24,
+          fontWeight: 700,
+          marginTop: 16
+        }}
+      >
+        Upload {title}
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          color: "#94a3b8",
+          textAlign: "center",
+          lineHeight: 1.6
+        }}
+      >
+        Click anywhere inside this box
+        <br />
+        or use the buttons below
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          width: "100%",
+          marginTop: 30
+        }}
+      >
+        <button
+          className="btn"
+          style={{ flex: 1 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            galleryRef.current.click();
+          }}
+        >
+          📂 Upload
+        </button>
+        <button
+          className="btn"
+          style={{ flex: 1 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            cameraRef.current.click();
+          }}
+        >
+          📷 Camera
+        </button>
+      </div>
+    </>
+  )}
+</div>
 
       {/* STATUS */}
       <div
