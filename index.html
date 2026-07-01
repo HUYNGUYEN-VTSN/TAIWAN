@@ -174,7 +174,7 @@ UPLOAD BUTTON
 
 .btn{
 
-width:100%;
+width:auto;
 
 padding:16px;
 
@@ -205,7 +205,7 @@ transition:.3s;
 transform:translateY(-2px);
 
 box-shadow:0 15px 30px rgba(37,99,235,.45);
-
+filter:brightness(1.08);
 }
 
 /* ===========================
@@ -653,38 +653,19 @@ async function extractFields(base64, mimeType) {
 // COMPONENT RENDER 
 // =====================================================================
 function ImageSlot({ title, onSelect, status, previewUrl }) {
-  const fileInputRef = React.useRef(null);
-   
-const openGallery = () => {
-  fileInputRef.current?.click();
-};
-
-const openCamera = () => {
-  fileInputRef.camera?.click();
-};
+  const galleryRef = React.useRef(null);
+  const cameraRef = React.useRef(null);
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) onSelect(file);
+    // Cho phép chọn lại đúng file cũ
+    e.target.value = "";
   };
-
-  const triggerUpload = () => {
-    fileInputRef.current?.click();
-  };
-
   const isReady = status.type === "ok";
   const isLoading = status.type === "warn";
   const isError = status.type === "bad";
-
   return (
-    <div
-      className="card"
-      onClick={triggerUpload}
-      style={{
-        cursor: "pointer",
-        position: "relative",
-        overflow: "hidden"
-      }}
-    >
+    <div className="card">
       {/* HEADER */}
       <div
         style={{
@@ -698,27 +679,31 @@ const openCamera = () => {
           <div style={{ fontSize: 20, fontWeight: 700 }}>
             {title === "TAC" ? "🪪 TAC Document" : "🛂 VISA Document"}
           </div>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-            Click anywhere to upload or replace image
+          <div
+            style={{
+              fontSize: 12,
+              color: "#94a3b8",
+              marginTop: 4
+            }}
+          >
+            Choose an image or take a photo
           </div>
         </div>
-        <div style={{ fontSize: 28, opacity: 0.9 }}>
+        <div style={{ fontSize: 28 }}>
           {title === "TAC" ? "🇹🇼" : "🌍"}
         </div>
       </div>
-      {/* BODY */}
+       
+      {/* PREVIEW */}
       <div
         style={{
           border: "2px dashed rgba(255,255,255,.15)",
           borderRadius: 18,
           minHeight: 320,
           display: "flex",
-          alignItems: "center",
           justifyContent: "center",
-          background: previewUrl
-            ? "rgba(255,255,255,0.02)"
-            : "rgba(255,255,255,0.01)",
-          transition: "0.2s ease"
+          alignItems: "center",
+          background: "rgba(255,255,255,.02)"
         }}
       >
         {previewUrl ? (
@@ -727,25 +712,57 @@ const openCamera = () => {
             alt={title}
             style={{
               width: "100%",
-              height: "320px",
+              height: 320,
               objectFit: "contain",
               borderRadius: 14
             }}
-            onClick={triggerUpload}
           />
         ) : (
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 60 }}>📄</div>
-
-            <div style={{ marginTop: 10, fontWeight: 600 }}>
-              Drop or Click to Upload
+            <div
+              style={{
+                marginTop: 10,
+                fontWeight: 600
+              }}
+            >
+              No Image Selected
             </div>
-
-            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
-              JPG • PNG • HEIC supported
+            <div
+              style={{
+                fontSize: 12,
+                color: "#94a3b8",
+                marginTop: 6
+              }}
+            >
+              JPG • PNG • HEIC
             </div>
           </div>
         )}
+      </div>
+
+      {/* BUTTONS */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 16
+        }}
+      >
+        <button
+          className="btn"
+          style={{ flex: 1 }}
+          onClick={() => galleryRef.current.click()}
+        >
+          📂 Choose Image
+        </button>
+        <button
+          className="btn"
+          style={{ flex: 1 }}
+          onClick={() => cameraRef.current.click()}
+        >
+          📷 Camera
+        </button>
       </div>
 
       {/* STATUS */}
@@ -753,42 +770,33 @@ const openCamera = () => {
         className={`status ${
           isReady ? "ok" : isLoading ? "warn" : isError ? "bad" : ""
         }`}
-        style={{ marginTop: 14 }}
       >
-        {isReady && "✅ Ready"}
-        {isLoading && "⚡ Processing..."}
+        {isReady && "✅ Image Processed"}
+
+        {isLoading && "⚡ AI Processing..."}
+
         {isError && status.text}
-        {!isReady && !isLoading && !isError && "Waiting for upload"}
+
+        {!isReady && !isLoading && !isError && "Waiting for image"}
       </div>
 
-      {/* HIDDEN INPUT */}
-      <div style={{ display: "none" }}>
-  <input
-    type="file"
-    ref={fileInputRef}
-    accept="image/*"
-    style={{ display: "none" }}
-    onChange={handleChange}
-  />
-
-  <input
-    type="file"
-    ref={(el) => (fileInputRef.camera = el)}
-    accept="image/*"
-    capture="environment"
-    style={{ display: "none" }}
-    onChange={handleChange}
-  />
-</div>
-       
-<div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-  <button className="btn" onClick={openGallery} style={{ flex: 1 }}>
-    📁 Upload File
-  </button>
-  <button className="btn" onClick={openCamera} style={{ flex: 1 }}>
-    📷 Take Photo
-  </button>
-</div>
+      {/* Hidden Inputs */}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleChange}
+      />
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={handleChange}
+      />
+    </div>
   );
 }
   
