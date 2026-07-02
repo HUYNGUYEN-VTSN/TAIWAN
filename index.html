@@ -478,7 +478,8 @@ const FIELD_LABELS = {
   name: "Họ tên",
   dob: "Ngày sinh",
   passport: "Số hộ chiếu",
-  gender: "Giới tính"
+  gender: "Giới tính",
+  visaNumber: "Số Visa (USA)"
 };
 
 function fileToBase64(file) {
@@ -610,6 +611,7 @@ async function extractFields(base64, mimeType) {
   "dob": "ngày sinh định dạng DD/MM/YYYY hoặc chuỗi gốc nếu mờ",
   "passport": "số hộ chiếu, viết liền viết hoa không khoảng trắng",
   "gender": "M hoặc F (Male/Female quy về M/F)",
+  "visaNumber": "Số Visa Mỹ (US Visa Number). Nếu đây là ảnh TAC: tìm số viết tay hoặc khoanh đỏ nằm cạnh/ dưới dòng chữ in 'Holding a ... passport with USA visa' (thường ở góc dưới bên phải mục Authorization Grounds), viết hoa không khoảng trắng. Nếu đây là ảnh VISA/thị thực Mỹ: lấy đúng số Visa in trên tem visa (thường ghi 'Visa No.' hoặc số Foil, dạng 1 chữ cái + 7 số), viết hoa không khoảng trắng. Nếu không tìm thấy, để chuỗi rỗng.",
   "cancelled": true hoặc false (true nếu trên ảnh có bất kỳ con dấu, watermark, hoặc chữ in nào ghi CANCEL, CANCELLED, CANCELED, VOID, HỦY, HỦY BỎ; false nếu không thấy),
   "rawStampText": "chép lại nguyên văn chữ trên con dấu/watermark hủy nếu có, hoặc chuỗi rỗng nếu không có"
 }`;
