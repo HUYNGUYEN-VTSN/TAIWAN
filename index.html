@@ -609,7 +609,9 @@ async function extractFields(base64, mimeType) {
   "name": "họ tên đầy đủ, viết hoa",
   "dob": "ngày sinh định dạng DD/MM/YYYY hoặc chuỗi gốc nếu mờ",
   "passport": "số hộ chiếu, viết liền viết hoa không khoảng trắng",
-  "gender": "M hoặc F (Male/Female quy về M/F)"
+  "gender": "M hoặc F (Male/Female quy về M/F)",
+  "cancelled": true hoặc false (true nếu trên ảnh có bất kỳ con dấu, watermark, hoặc chữ in nào ghi CANCEL, CANCELLED, CANCELED, VOID, HỦY, HỦY BỎ; false nếu không thấy),
+  "rawStampText": "chép lại nguyên văn chữ trên con dấu/watermark hủy nếu có, hoặc chuỗi rỗng nếu không có"
 }`;
 
   const MAX_RETRIES = 2;
@@ -909,6 +911,20 @@ function normalizeForCompare(value, fieldType) {
   }
   return s.replace(/\s+/g, " ");
 }
+
+// Kiểm tra xem dữ liệu đọc được có dấu hiệu VISA/TAC đã bị HỦY hay không
+// (dựa vào cờ "cancelled" AI trả về + quét toàn bộ giá trị field phòng khi AI không set cờ)
+function isCancelledDoc(dataObj) {
+  if (!dataObj) return false;
+  if (dataObj.cancelled === true) return true;
+
+  const combined = Object.values(dataObj)
+    .filter(v => typeof v === "string" || typeof v === "number")
+    .join(" ")
+    .toUpperCase();
+
+  return /CANCEL/.test(combined);
+}
   
 function App() {
   const [slotA, setSlotA] = useState({ file: null, preview: null, status: { text: "Chưa xử lý", type: "" }, data: null });
@@ -940,6 +956,13 @@ function App() {
     }
 
     let allMatch = true;
+
+    // Nếu phát hiện dấu/chữ CANCEL - CANCELLED - CANCELED trên TAC hoặc VISA => luôn luôn KHÔNG HỢP LỆ
+    const cancelledA = isCancelledDoc(slotA.data);
+    const cancelledB = isCancelledDoc(slotB.data);
+    const isCancelled = cancelledA || cancelledB;
+    if (isCancelled) allMatch = false;
+
     const rows = Object.keys(FIELD_LABELS).map(key => {
       const valA = slotA.data[key] || "";
       const valB = slotB.data[key] || "";
@@ -1019,9 +1042,11 @@ function App() {
       opacity: .95
     }}
   >
-    {allMatch
-      ? "Tất cả thông tin trên TAC và VISA đều khớp."
-      : "Phát hiện ít nhất một trường dữ liệu không khớp."}
+    {isCancelled
+      ? `🚫 VISA/TAC đã bị HỦY (phát hiện dấu CANCEL${cancelledA ? " trên TAC" : ""}${cancelledA && cancelledB ? " và" : ""}${cancelledB ? " trên VISA" : ""})`
+      : allMatch
+        ? "Tất cả thông tin trên TAC và VISA đều khớp."
+        : "Phát hiện ít nhất một trường dữ liệu không khớp."}
   </div>
 
 </div>
